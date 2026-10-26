@@ -34,12 +34,25 @@ rojo serve               # start serwera Rojo (port 34872)
 ./scripts/check.sh       # format + lint + typy + zasady architektury + build — to samo, co CI
 ```
 
+## Grafiki kart (jednorazowo)
+
+Karty są obrazkami z `assets/cards/` (rewers + ramka dla każdej rzadkości). Roblox potrzebuje ich ID:
+
+1. Studio: **View → Asset Manager → Bulk Import** i wybierz wszystkie 10 plików z `assets/cards/`.
+2. W Asset Managerze (zakładka **Images**) kliknij obrazek prawym → **Copy Asset ID**.
+3. Wklej ID do `src/ReplicatedStorage/Shared/Config/CardArt.luau` przy tej samej nazwie
+   (`Back`, `Common`, `Uncommon`, …). Wystarczy sama liczba.
+
+Dopóki ID są puste, gra rysuje zastępcze karty z ramek. Grafiki rysuje `tools/cardart`
+(`node tools/cardart/render.mjs` przerysowuje PNG po zmianie projektu w `cards.html`).
+
 ## Strojenie gry (bez dotykania logiki)
 
 | Co | Gdzie |
 |---|---|
 | Rzadkości, szanse „1 in N”, kolory, siła efektów | `src/ReplicatedStorage/Shared/Config/Rarities.luau` |
 | Karty (nazwa, rzadkość, ikona) | `src/ReplicatedStorage/Shared/Config/Cards.luau` |
+| ID grafik kart | `src/ReplicatedStorage/Shared/Config/CardArt.luau` |
 | Kart na losowanie, lucky roll, cooldown | `src/ReplicatedStorage/Shared/Config/Roll.luau` |
 | Kolory UI, rozmiary, czcionki | `src/ReplicatedStorage/Shared/Config/Theme.luau` |
 | Dźwięki (na razie wyłączone, `Enabled = false`) | `src/ReplicatedStorage/Shared/Config/Sounds.luau` |

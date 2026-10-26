@@ -38,7 +38,7 @@ src/
    ├─ Shared/
    │  ├─ Core/      Loader, Log, Seal
    │  ├─ Net/       init (właściciel remotów), Remotes (jedyna lista remotów)
-   │  ├─ Config/    Rarities, Cards, Roll, Theme, Sounds, Input
+   │  ├─ Config/    Rarities, Cards, CardArt (ID obrazków kart), Roll, Theme, Sounds, Input
    │  ├─ Domain/    Catalog (wyszukiwanie kart/rzadkości), Odds (zasady losowania, typ Result)
    │  └─ Util/      Scope
    └─ Client/
@@ -46,12 +46,15 @@ src/
       ├─ Core/Audio                     dźwięki z Config/Sounds (na razie wyłączone: Sounds > Enabled)
       └─ UI/
          ├─ Root, Fit, Make, Motion, Paint    warstwy ScreenGui, skalowanie, budowanie, tweeny, kolory
-         ├─ Components/  Card/ (init, Front, Back, Kit), Button
+         ├─ Components/  Card/ (init, Art = karty z obrazków, Front/Back = zastępcze z ramek, Kit), Button
          ├─ Fx/          Flash, Shake, Burst, Ring, Aura, Flood, Converge, Confetti, Rays, Banner
          └─ Screens/
             ├─ Stage/    init, Show, Deal, Reels, Pick, Celebrate  karty u góry ekranu
             └─ Hud/      init                                      AUTO ROLL + ROLL na dole
 ```
+
+Poza `src/`: `assets/cards/` (PNG kart do wgrania), `tools/cardart/` (projekt kart w HTML/CSS +
+`render.mjs`, który zapisuje PNG), `scripts/` (check.sh, guard.sh).
 
 ## 4. Właściciele
 
@@ -75,7 +78,9 @@ ROLL / [R]  ->  RollController.Roll
             ->  Stage:Play(result, przycisk ROLL)
                    Deal       3 zakryte karty wylatują z przycisku ROLL ze smugą i uderzają w miejsca
                    Reels      karty otwierają się i kręcą jak bębny (twarze wpadają, poświata miga
-                              kolorem); rzadka karta zamyka się, drży i świeci przed odsłonięciem;
+                              kolorem); zwykła karta prawie zatrzymuje się na lepszej (near miss);
+                              Rare+ zamyka się i wspina po rzadkościach (zielony, niebieski,
+                              fioletowy, złoty...) z wybuchem i nazwą przy każdym kroku;
                               odsłonięcie: biały błysk, squash, iskry, fala, gwiazdki
                    Pick       promień światła przelatuje po kartach, wygrana podskakuje, reszta
                               pęka w odłamki, wygrana obraca się na środek

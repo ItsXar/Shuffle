@@ -2,9 +2,11 @@
 --[[
 	Phase 2 of a roll show: every card flips open and spins through random faces like a slot reel
 	(each new face drops in, the halo flashes its colour, the card jitters), slowing down, the
-	cards further right spinning longer. A card that landed Rare or better closes again and
-	trembles, glowing ever brighter in its real colour, before it reveals. The reveal hits with a
-	white flash, squash and stretch, sparks, a shockwave and the stars popping in.
+	cards further right spinning longer. A common result nearly stops on a better card first
+	(near miss). A Rare-or-better result closes the card and climbs the rarities instead: it glows
+	green, then blue, then purple... each step with a burst and the rarity name, trembling harder,
+	until it reaches its real rarity. The reveal hits with a white flash, squash and stretch,
+	sparks, a shockwave and the stars popping in.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,16 +20,20 @@ local Log = require(ReplicatedStorage.Shared.Core.Log)
 local Make = require(script.Parent.Parent.Parent.Make)
 local Motion = require(script.Parent.Parent.Parent.Motion)
 local Odds = require(ReplicatedStorage.Shared.Domain.Odds)
+local Paint = require(script.Parent.Parent.Parent.Paint)
 local Ring = require(script.Parent.Parent.Parent.Fx.Ring)
 local Shake = require(script.Parent.Parent.Parent.Fx.Shake)
 local Show = require(script.Parent.Show)
+local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 
 local TAG = "Reels"
 local OPEN_SECONDS = 0.08
-local FIRST_SPIN = 0.04
-local SLOWDOWN = 1.08
-local BASE_SPINS = 6
+local FIRST_SPIN = 0.05
+local SLOWDOWN = 1.09
+local BASE_SPINS = 8
 local SPINS_PER_CARD = 4
+local NEAR_MISS_HOLD = 2.4
+local CLIMB_FROM = 2
 local DROP = 26
 -- The reel shows faces drawn with this much luck, so gold and pink flash by and tease.
 local TEASE_LUCK = 30
@@ -58,27 +64,89 @@ local function spin(show: Show.Show, card: Card.Card, index: number)
 	card.Root.Rotation = 0
 end
 
--- The closed card shakes harder and glows brighter in its real colour until it opens.
-local function tension(show: Show.Show, card: Card.Card, index: number, cardId: string)
-	local rarity = Catalog.RarityOf(cardId)
-	local seconds = rarity.Fx.Suspense
+-- A face of a better rarity than `cardId`, or nil when there is none.
+local function better(show: Show.Show, cardId: string): string?
+	local tier = Catalog.TierOf(cardId)
+	local target = math.min(tier + show.Rng:NextInteger(1, 2), Catalog.TierCount())
+	if target <= tier then
+		return nil
+	end
+	local pool = Catalog.CardsOf(target)
+	return pool[show.Rng:NextInteger(1, #pool)].Id
+end
+
+-- The reel slows right down on a better card... and flicks past it.
+local function nearMiss(show: Show.Show, card: Card.Card, cardId: string)
+	local tease = better(show, cardId)
+	if not tease then
+		return
+	end
+	local color = Catalog.RarityOf(tease).Color
+	card:Show(tease)
+	card:Glow(color, 0.8)
+	card:Glow(color, 0.3, FIRST_SPIN * NEAR_MISS_HOLD * 4)
+	task.wait(FIRST_SPIN * NEAR_MISS_HOLD * 4)
+end
+
+-- Rarity name shown under the card while it climbs.
+local function climbLabel(show: Show.Show, index: number): TextLabel
+	local slot = Show.Slot(index, #show.Cards)
+	return show.Scope:Add(Make("TextLabel", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = slot + UDim2.fromOffset(0, Theme.Card.Size.Y / 2 + 14),
+		Size = UDim2.fromOffset(Theme.Card.Size.X + 30, 26),
+		BackgroundTransparency = 1,
+		TextScaled = true,
+		Font = Theme.Fonts.Display,
+		TextTransparency = 1,
+		ZIndex = 7,
+		Parent = show.Canvas,
+	}, {
+		Make("UIStroke", { Thickness = 2, Color = Theme.Colors.Ink, Transparency = 1 }),
+	}))
+end
+
+-- The closed card climbs rarity by rarity up to its real one, shaking harder at every step.
+local function climb(show: Show.Show, card: Card.Card, index: number, cardId: string)
+	local tier = Catalog.TierOf(cardId)
+	local seconds = Catalog.RarityOf(cardId).Fx.Suspense
 	local slot = Show.Slot(index, #show.Cards)
 	local rng = show.Rng
+	local label = climbLabel(show, index)
+	local scale: UIScale = Make("UIScale", { Parent = label })
+	local outline = label:FindFirstChildOfClass("UIStroke") :: UIStroke
+	local steps = tier - CLIMB_FROM + 1
+	local stepSeconds = seconds / steps
 	card:Show(nil)
-	local elapsed = 0
-	while elapsed < seconds do
-		local progress = elapsed / seconds
-		local wobble = 4 * progress
-		card.Root.Rotation = rng:NextNumber(-1, 1) * (1 + 7 * progress)
-		card.Root.Position = slot + UDim2.fromOffset(rng:NextNumber(-1, 1) * wobble, rng:NextNumber(-1, 1) * wobble)
-		card:Glow(rarity.Color, 0.25 + 0.75 * progress * (0.7 + 0.3 * math.sin(elapsed * 30)))
-		if progress > 0.5 and rng:NextNumber() < 0.5 then
-			Burst.Play(Show.ScreenCenter(card.Root), rarity.Color, 1, 0.3)
+
+	for step = 1, steps do
+		local rarity = Catalog.Rarity(CLIMB_FROM + step - 1)
+		local strength = step / steps
+		label.Text = string.upper(rarity.Name)
+		label.TextColor3 = Paint.Tint(rarity.Color, 0.2)
+		label.TextTransparency = 0
+		outline.Transparency = 0
+		Motion.Pop(scale, 1.8, 1, 0.3)
+		local at = Show.ScreenCenter(card.Root)
+		Burst.Play(at, rarity.Color, 8 + step * 4, 0.5)
+		Ring.Play(at, rarity.Color, 180 + step * 30, 0.4, 3 + step)
+		Shake.Add(0.05 + strength * 0.12)
+		card:Flash(0.2)
+		Audio.Play("Tick", 1 + step * 0.15)
+
+		local elapsed = 0
+		while elapsed < stepSeconds do
+			local wobble = 1 + 5 * strength
+			card.Root.Rotation = rng:NextNumber(-1, 1) * (1 + 6 * strength)
+			card.Root.Position = slot + UDim2.fromOffset(rng:NextNumber(-1, 1) * wobble, rng:NextNumber(-1, 1) * wobble)
+			card:Glow(rarity.Color, 0.35 + 0.65 * strength * (0.75 + 0.25 * math.sin(elapsed * 30)))
+			elapsed += task.wait()
 		end
-		elapsed += task.wait()
 	end
 	card.Root.Rotation = 0
 	card.Root.Position = slot
+	Motion.Tween(label, 0.4, { TextTransparency = 1 })
+	Motion.Tween(outline, 0.4, { Transparency = 1 })
 end
 
 local function reveal(card: Card.Card, cardId: string)
@@ -110,8 +178,10 @@ local function run(show: Show.Show, index: number)
 	local card = show.Cards[index]
 	local cardId = show.Result.Hand[index]
 	spin(show, card, index)
-	if Catalog.RarityOf(cardId).Fx.Suspense > 0 then
-		tension(show, card, index, cardId)
+	if Catalog.TierOf(cardId) > CLIMB_FROM then
+		climb(show, card, index, cardId)
+	else
+		nearMiss(show, card, cardId)
 	end
 	reveal(card, cardId)
 end

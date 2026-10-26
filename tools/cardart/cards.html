@@ -1,0 +1,262 @@
+<!doctype html>
+<!--
+	Card art for Shuffle: the card back and one front frame per rarity, drawn at 600x840 and saved
+	as transparent PNGs by render.mjs. Everything that changes per card (icon, card name) is left
+	empty and drawn by the game on top (Client/UI/Components/Card). Layout of those empty spots
+	must match Client/UI/Components/Card/Art.luau.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+	html, body { margin: 0; background: transparent; }
+	body { display: flex; flex-wrap: wrap; gap: 240px 240px; padding: 160px; width: 4400px; }
+	.card { position: relative; width: 600px; height: 840px; border-radius: 48px; flex: none; }
+	.layer { position: absolute; inset: 0; border-radius: inherit; }
+	.rim { box-shadow: inset 0 0 0 4px rgba(0,0,0,.55), inset 0 6px 6px rgba(255,255,255,.55), inset 0 -6px 8px rgba(0,0,0,.45); }
+	.panel { position: absolute; inset: 24px; border-radius: 30px; overflow: hidden;
+		box-shadow: inset 0 0 0 3px rgba(0,0,0,.45), inset 0 0 40px rgba(0,0,0,.55), 0 0 0 3px rgba(255,255,255,.35); }
+	.panel > * { position: absolute; }
+	.text { font-family: Oswald, sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; }
+	svg { overflow: visible; }
+</style>
+</head>
+<body>
+<script>
+const R = [
+	// id, name, chance, base colour, dark, light, metal stops (rim), stars, ornament level
+	{ id: "Common", name: "Common", chance: "1/1.5", c: "#cfd5df", d: "#4a5262", l: "#ffffff", metal: ["#f4f6fa", "#9aa3b2", "#e7ebf2", "#6d7584", "#d9dee7"], stars: 1, level: 0 },
+	{ id: "Uncommon", name: "Uncommon", chance: "1/4", c: "#5ee880", d: "#0f5a2c", l: "#d9ffe3", metal: ["#e9fff0", "#69c98a", "#d0f5dc", "#2f7f4c", "#b8ecca"], stars: 2, level: 0 },
+	{ id: "Rare", name: "Rare", chance: "1/12", c: "#3fa9ff", d: "#0c2f74", l: "#d8efff", metal: ["#e6f4ff", "#5da7e6", "#c9e6ff", "#24599c", "#a9d4fb"], stars: 3, level: 1 },
+	{ id: "Epic", name: "Epic", chance: "1/40", c: "#b862ff", d: "#34106e", l: "#f0dcff", metal: ["#f6eaff", "#a874e0", "#e4ccff", "#5a2a99", "#cfa8f5"], stars: 4, level: 2 },
+	{ id: "Legendary", name: "Legendary", chance: "1/150", c: "#ffc23a", d: "#7a3f00", l: "#fff3c4", metal: ["#fff6c9", "#e0a224", "#fff0a8", "#9a5a06", "#ffd665"], stars: 5, level: 3 },
+	{ id: "Mythic", name: "Mythic", chance: "1/600", c: "#ff4080", d: "#6a0628", l: "#ffd6e4", metal: ["#ffe1ec", "#e2537f", "#ffc2d6", "#8c1840", "#ff8fb2"], stars: 6, level: 4 },
+	{ id: "Divine", name: "Divine", chance: "1/2.5K", c: "#7ff6ff", d: "#0a5670", l: "#ffffff", metal: ["#ffffff", "#9fe9f3", "#ffffff", "#4aa6bd", "#d6fbff"], stars: 6, level: 5 },
+	{ id: "Celestial", name: "Celestial", chance: "1/10K", c: "#8466ff", d: "#120a42", l: "#e2dcff", metal: ["#ffd1f7", "#8d7bff", "#9ef7ff", "#ffe48f", "#ff9ad8"], stars: 6, level: 6, cosmic: true },
+	{ id: "Secret", name: "Secret", chance: "1/100K", c: "#1a1724", d: "#050408", l: "#fff1b0", metal: ["#fff3b8", "#1b1a22", "#ffd34d", "#09080c", "#ffe58a"], stars: 6, level: 7, secret: true },
+];
+
+const metal = (stops, angle = 135) => `linear-gradient(${angle}deg, ${stops.map((s, i) => `${s} ${(i / (stops.length - 1)) * 100}%`).join(",")})`;
+const conicMetal = (stops) => `conic-gradient(from 210deg, ${[...stops, stops[0]].map((s, i, a) => `${s} ${(i / (a.length - 1)) * 360}deg`).join(",")})`;
+
+function el(tag, style = {}, parent, html) {
+	const e = document.createElement(tag);
+	Object.assign(e.style, style);
+	if (html != null) e.innerHTML = html;
+	if (parent) parent.appendChild(e);
+	return e;
+}
+
+function sparkle(parent, x, y, size, color, opacity = 1, rot = 0) {
+	el("div", { left: `${x - size / 2}px`, top: `${y - size / 2}px`, width: `${size}px`, height: `${size}px`, opacity, transform: `rotate(${rot}deg)`,
+		filter: `drop-shadow(0 0 ${size / 4}px ${color})` }, parent,
+		`<svg viewBox="-10 -10 20 20" width="${size}" height="${size}"><path d="M0 -10 C1 -2 2 -1 10 0 C2 1 1 2 0 10 C-1 2 -2 1 -10 0 C-2 -1 -1 -2 0 -10Z" fill="${color}"/></svg>`);
+}
+
+function rng(seed) {
+	return () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+}
+
+// Corner filigree: a curl and a gem, mirrored into each corner.
+function corners(card, r) {
+	const fill = r.metal[0], stroke = r.metal[3];
+	for (const [sx, sy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+		const wrap = el("div", { position: "absolute", left: sx > 0 ? "0" : "auto", right: sx < 0 ? "0" : "auto", top: sy > 0 ? "0" : "auto", bottom: sy < 0 ? "0" : "auto",
+			width: "130px", height: "130px", transform: `scale(${sx}, ${sy})`, zIndex: 5 }, card);
+		const gem = r.level >= 3 ? `<path d="M40 22 L52 40 L40 58 L28 40 Z" fill="${r.c}" stroke="${stroke}" stroke-width="3"/><path d="M40 22 L52 40 L40 40 Z" fill="rgba(255,255,255,.6)"/>` : `<circle cx="40" cy="40" r="10" fill="${fill}" stroke="${stroke}" stroke-width="3"/>`;
+		const curl = r.level >= 1 ? `<path d="M58 30 C78 26 96 30 112 22 M30 58 C26 78 30 96 22 112" stroke="${fill}" stroke-width="7" fill="none" stroke-linecap="round"/>
+			<path d="M58 30 C78 26 96 30 112 22 M30 58 C26 78 30 96 22 112" stroke="${stroke}" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"/>
+			<circle cx="112" cy="22" r="6" fill="${fill}" stroke="${stroke}" stroke-width="2"/><circle cx="22" cy="112" r="6" fill="${fill}" stroke="${stroke}" stroke-width="2"/>` : "";
+		el("div", { filter: "drop-shadow(0 3px 3px rgba(0,0,0,.5))" }, wrap, `<svg viewBox="0 0 130 130" width="130" height="130">${curl}${gem}</svg>`);
+	}
+}
+
+// Wings behind the crest for the top rarities: fans of long feathers.
+function wings(card, r) {
+	const w = el("div", { position: "absolute", left: "50%", top: "-150px", width: "460px", height: "170px", marginLeft: "-230px", zIndex: 4,
+		filter: `drop-shadow(0 4px 4px rgba(0,0,0,.5)) drop-shadow(0 0 10px ${r.c})` }, card);
+	const feathers = [0, 1, 2, 3, 4].map((i) => {
+		const angle = -6 - i * 11, len = 160 - i * 14;
+		return `<g transform="translate(230 128) rotate(${angle})"><path d="M0 0 C-${len * 0.3} -26 -${len * 0.8} -24 -${len} -6 C-${len * 0.75} 6 -${len * 0.3} 14 0 8 Z" fill="url(#wg-${r.id})" stroke="${r.metal[3]}" stroke-width="2.5" stroke-linejoin="round"/>
+			<path d="M-6 3 L-${len * 0.85} -6" stroke="${r.metal[3]}" stroke-width="1.5" opacity=".6"/></g>`;
+	}).join("");
+	w.innerHTML = `<svg viewBox="0 0 460 170" width="460" height="170"><defs><linearGradient id="wg-${r.id}" x1="1" y1="0" x2="0" y2="0">
+		<stop offset="0" stop-color="${r.metal[1]}"/><stop offset=".45" stop-color="${r.metal[0]}"/><stop offset="1" stop-color="${r.metal[2]}"/></linearGradient></defs>
+		<g>${feathers}</g><g transform="translate(460 0) scale(-1 1)">${feathers}</g></svg>`;
+}
+
+// Top crest: a jewel set in metal, bigger and more ornate with rarity.
+function crest(card, r) {
+	if (r.level < 2) return;
+	if (r.level >= 4) wings(card, r);
+	const size = r.level >= 3 ? 104 : 84;
+	const c = el("div", { position: "absolute", left: "50%", top: `${-size * 0.42}px`, width: `${size}px`, height: `${size}px`, marginLeft: `${-size / 2}px`, zIndex: 6,
+		filter: `drop-shadow(0 4px 5px rgba(0,0,0,.55)) drop-shadow(0 0 14px ${r.c})` }, card);
+	const crown = r.level >= 3 ? `<path d="M14 66 L22 30 L38 48 L50 18 L62 48 L78 30 L86 66 Z" fill="url(#cm)" stroke="${r.metal[3]}" stroke-width="3" stroke-linejoin="round"/>` : "";
+	c.innerHTML = `<svg viewBox="0 0 100 100" width="${size}" height="${size}"><defs>
+		<linearGradient id="cm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${r.metal[0]}"/><stop offset=".5" stop-color="${r.metal[1]}"/><stop offset="1" stop-color="${r.metal[3]}"/></linearGradient>
+		<radialGradient id="cg" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff"/><stop offset=".35" stop-color="${r.l}"/><stop offset=".7" stop-color="${r.c}"/><stop offset="1" stop-color="${r.d}"/></radialGradient></defs>
+		${crown}
+		<path d="M50 40 L80 64 L50 96 L20 64 Z" fill="url(#cm)" stroke="${r.metal[3]}" stroke-width="3" stroke-linejoin="round"/>
+		<path d="M50 50 L70 65 L50 86 L30 65 Z" fill="url(#cg)" stroke="rgba(0,0,0,.4)" stroke-width="2"/>
+		<path d="M50 50 L70 65 L50 65 Z" fill="rgba(255,255,255,.55)"/></svg>`;
+}
+
+function panelBackground(panel, r) {
+	const p = el("div", { inset: "0" }, panel);
+	if (r.cosmic) {
+		p.style.background = `radial-gradient(circle at 30% 25%, rgba(255,120,220,.55), transparent 45%), radial-gradient(circle at 75% 60%, rgba(80,220,255,.45), transparent 50%),
+			radial-gradient(circle at 50% 42%, #b9a8ff 0%, #5a3cff 30%, #1a0c5c 65%, #07031c 100%)`;
+	} else if (r.secret) {
+		p.style.background = `radial-gradient(circle at 50% 42%, #3a3550 0%, #15121f 45%, #050408 100%)`;
+	} else {
+		p.style.background = `radial-gradient(circle at 50% 40%, ${r.l} 0%, ${r.c} 32%, ${r.d} 100%)`;
+	}
+	// sunburst rays from the art window
+	el("div", { inset: "0", opacity: r.secret ? 0.18 : 0.28, mixBlendMode: "screen",
+		background: `repeating-conic-gradient(from 0deg at 50% 42%, rgba(255,255,255,.9) 0deg 5deg, transparent 5deg 15deg)`,
+		maskImage: "radial-gradient(circle at 50% 42%, #000 0%, #000 30%, transparent 75%)", webkitMaskImage: "radial-gradient(circle at 50% 42%, #000 0%, #000 30%, transparent 75%)" }, panel);
+	// halftone dots fading towards the middle
+	el("div", { inset: "0", opacity: 0.22,
+		background: `radial-gradient(circle, ${r.secret ? "#ffd34d" : "#fff"} 2.2px, transparent 2.6px) 0 0 / 18px 18px`,
+		maskImage: "radial-gradient(circle at 50% 42%, transparent 35%, #000 85%)", webkitMaskImage: "radial-gradient(circle at 50% 42%, transparent 35%, #000 85%)" }, panel);
+	if (r.cosmic || r.secret) {
+		const rand = rng(r.secret ? 99 : 7);
+		for (let i = 0; i < 70; i++) el("div", { left: `${rand() * 552}px`, top: `${rand() * 792}px`, width: "3px", height: "3px", borderRadius: "50%", background: r.secret ? "#ffe58a" : "#fff", opacity: 0.3 + rand() * 0.7 }, panel);
+	}
+	if (r.secret) {
+		// gold cracks
+		el("div", { inset: "0", opacity: 0.85 }, panel, `<svg viewBox="0 0 552 792" width="552" height="792"><g stroke="#ffd34d" stroke-width="3" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 6px #ffb300)">
+			<path d="M0 120 L80 160 L120 140 L190 210"/><path d="M552 90 L470 150 L440 130 L380 200"/><path d="M0 610 L70 570 L110 600 L170 540"/><path d="M552 660 L480 600 L430 630 L390 560"/></g></svg>`);
+	}
+	// soft vignette
+	el("div", { inset: "0", background: "radial-gradient(circle at 50% 45%, transparent 55%, rgba(0,0,0,.45) 100%)" }, panel);
+}
+
+// The window the icon sits in: metal ring, inner glow.
+function artWindow(panel, r) {
+	const size = 360, cx = 276, cy = 322;
+	el("div", { left: `${cx - size / 2 - 14}px`, top: `${cy - size / 2 - 14}px`, width: `${size + 28}px`, height: `${size + 28}px`, borderRadius: "50%",
+		background: conicMetal(r.metal), boxShadow: `0 6px 14px rgba(0,0,0,.5), 0 0 30px ${r.c}` }, panel);
+	el("div", { left: `${cx - size / 2}px`, top: `${cy - size / 2}px`, width: `${size}px`, height: `${size}px`, borderRadius: "50%",
+		background: r.secret ? "radial-gradient(circle, #ffe9a3 0%, #8a6a1a 35%, #120f18 75%)" : `radial-gradient(circle, #ffffff 0%, ${r.l} 30%, ${r.c} 62%, ${r.d} 100%)`,
+		boxShadow: "inset 0 0 0 4px rgba(0,0,0,.45), inset 0 10px 30px rgba(0,0,0,.35)" }, panel);
+	el("div", { left: `${cx - size / 2}px`, top: `${cy - size / 2}px`, width: `${size}px`, height: `${size}px`, borderRadius: "50%", opacity: 0.35,
+		background: "repeating-conic-gradient(rgba(255,255,255,.9) 0deg 4deg, transparent 4deg 12deg)",
+		maskImage: "radial-gradient(circle, #000 20%, transparent 70%)", webkitMaskImage: "radial-gradient(circle, #000 20%, transparent 70%)" }, panel);
+	// glossy highlight
+	el("div", { left: `${cx - size * 0.36}px`, top: `${cy - size * 0.46}px`, width: `${size * 0.72}px`, height: `${size * 0.3}px`, borderRadius: "50%",
+		background: "linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0))" }, panel);
+}
+
+// Plate for the card name (text drawn by the game).
+function namePlate(panel, r) {
+	el("div", { left: "50px", top: "555px", width: "452px", height: "74px", borderRadius: "16px", background: metal(r.metal, 90),
+		boxShadow: "0 5px 10px rgba(0,0,0,.5)" }, panel);
+	el("div", { left: "57px", top: "562px", width: "438px", height: "60px", borderRadius: "11px",
+		background: `linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.55))`, boxShadow: "inset 0 3px 8px rgba(0,0,0,.6)" }, panel);
+}
+
+// Ribbon with the rarity name and its stars.
+function ribbon(panel, r) {
+	const wrap = el("div", { left: "-24px", top: "648px", width: "600px", height: "130px" }, panel);
+	wrap.innerHTML = `<svg viewBox="0 0 600 130" width="600" height="130" style="filter: drop-shadow(0 6px 6px rgba(0,0,0,.55))"><defs>
+		<linearGradient id="rb-${r.id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${r.secret ? "#2b2633" : r.c}"/><stop offset="1" stop-color="${r.d}"/></linearGradient>
+		<linearGradient id="re-${r.id}" x1="0" y1="0" x2="1" y2="0">${r.metal.map((s, i) => `<stop offset="${i / (r.metal.length - 1)}" stop-color="${s}"/>`).join("")}</linearGradient></defs>
+		<path d="M18 46 L80 46 L80 104 L18 104 L40 75 Z" fill="${r.d}" stroke="url(#re-${r.id})" stroke-width="4"/>
+		<path d="M582 46 L520 46 L520 104 L582 104 L560 75 Z" fill="${r.d}" stroke="url(#re-${r.id})" stroke-width="4"/>
+		<path d="M64 34 L536 34 L536 96 L64 96 Z" fill="url(#rb-${r.id})" stroke="url(#re-${r.id})" stroke-width="5"/>
+		<path d="M64 34 L536 34 L536 52 L64 52 Z" fill="rgba(255,255,255,.22)"/></svg>`;
+	const label = el("div", { position: "absolute", left: "64px", top: "34px", width: "472px", height: "62px", display: "flex", alignItems: "center", justifyContent: "center",
+		fontSize: "46px", color: "#fff", WebkitTextStroke: "3px rgba(0,0,0,.55)", paintOrder: "stroke fill", textShadow: `0 3px 0 rgba(0,0,0,.45), 0 0 14px ${r.c}` }, wrap, r.name);
+	label.className = "text";
+	if (r.cosmic) label.style.textShadow = "0 3px 0 rgba(0,0,0,.45), 0 0 10px #ff9ad8, 0 0 22px #9ef7ff";
+	if (r.secret) {
+		label.style.color = "#ffe58a";
+		label.style.textShadow = "0 3px 0 rgba(0,0,0,.6), 0 0 16px #ffb300";
+	}
+	const stars = el("div", { position: "absolute", left: "0", top: "-6px", width: "600px", height: "40px", display: "flex", justifyContent: "center", gap: "6px" }, wrap);
+	for (let i = 0; i < r.stars; i++) {
+		el("div", { filter: "drop-shadow(0 3px 2px rgba(0,0,0,.6)) drop-shadow(0 0 6px #ffdd55)" }, stars,
+			`<svg viewBox="-12 -12 24 24" width="38" height="38"><path d="M0 -11 L3.2 -3.6 L11 -3.4 L4.9 1.6 L7 9.4 L0 4.9 L-7 9.4 L-4.9 1.6 L-11 -3.4 L-3.2 -3.6 Z" fill="${r.cosmic ? "url(#sg)" : "#ffd84a"}" stroke="#8a5a00" stroke-width="1.6" stroke-linejoin="round"/>
+			<path d="M0 -11 L3.2 -3.6 L0 -2 Z" fill="rgba(255,255,255,.7)"/>${r.cosmic ? `<defs><linearGradient id="sg"><stop offset="0" stop-color="#ff9ad8"/><stop offset=".5" stop-color="#9ef7ff"/><stop offset="1" stop-color="#ffe48f"/></linearGradient></defs>` : ""}</svg>`);
+	}
+}
+
+function oddsTab(panel, r) {
+	const tab = el("div", { right: "26px", top: "22px", height: "42px", padding: "0 18px", borderRadius: "21px", display: "flex", alignItems: "center",
+		background: "rgba(0,0,0,.55)", boxShadow: `inset 0 0 0 3px ${r.metal[1]}`, fontFamily: "Roboto", fontWeight: 700, fontSize: "24px", color: "#fff" }, panel, r.chance);
+	return tab;
+}
+
+function front(r) {
+	const card = el("div", {}, document.body);
+	card.className = "card";
+	card.id = r.id;
+	const rim = el("div", { background: conicMetal(r.metal) }, card);
+	rim.className = "layer rim";
+	const panel = el("div", {}, card);
+	panel.className = "panel";
+	panelBackground(panel, r);
+	artWindow(panel, r);
+	namePlate(panel, r);
+	ribbon(panel, r);
+	oddsTab(panel, r);
+	const rand = rng(r.stars * 31 + 5);
+	const count = 4 + r.level * 3;
+	for (let i = 0; i < count; i++) {
+		const x = 30 + rand() * 492, y = 40 + rand() * 500;
+		if (Math.hypot(x - 276, y - 322) < 210) continue;
+		sparkle(panel, x, y, 16 + rand() * 26, r.secret ? "#ffe58a" : "#ffffff", 0.6 + rand() * 0.4, rand() * 40);
+	}
+	corners(card, r);
+	crest(card, r);
+	// outer glow edge for the rarest
+	if (r.level >= 5) card.style.filter = `drop-shadow(0 0 10px ${r.metal[2]})`;
+}
+
+function back() {
+	const r = { id: "Back", c: "#8b5cff", d: "#1c0b4a", l: "#e6dbff", metal: ["#fff3c4", "#d39a1f", "#ffe48a", "#8a5206", "#ffd15a"], level: 2 };
+	const card = el("div", {}, document.body);
+	card.className = "card";
+	card.id = "Back";
+	const rim = el("div", { background: conicMetal(r.metal) }, card);
+	rim.className = "layer rim";
+	const panel = el("div", {}, card);
+	panel.className = "panel";
+	el("div", { inset: "0", background: "radial-gradient(circle at 50% 50%, #7a4dff 0%, #3a1a9e 45%, #12063a 100%)" }, panel);
+	el("div", { inset: "0", opacity: 0.35,
+		background: "linear-gradient(45deg, rgba(255,215,120,.5) 2px, transparent 2px) 0 0 / 40px 40px, linear-gradient(-45deg, rgba(255,215,120,.5) 2px, transparent 2px) 0 0 / 40px 40px" }, panel);
+	el("div", { inset: "0", background: "radial-gradient(circle at 50% 50%, rgba(255,255,255,.0) 30%, rgba(0,0,0,.55) 100%)" }, panel);
+	el("div", { inset: "18px", borderRadius: "20px", boxShadow: "inset 0 0 0 4px #e8b84a, inset 0 0 0 7px rgba(0,0,0,.4), inset 0 0 0 10px #8a5206" }, panel);
+	const cx = 276, cy = 396;
+	el("div", { left: `${cx - 230}px`, top: `${cy - 230}px`, width: "460px", height: "460px", opacity: 0.45,
+		background: "repeating-conic-gradient(from 0deg, rgba(255,220,130,.9) 0deg 3deg, transparent 3deg 15deg)",
+		maskImage: "radial-gradient(circle, #000 30%, transparent 70%)", webkitMaskImage: "radial-gradient(circle, #000 30%, transparent 70%)" }, panel);
+	el("div", { left: "0", top: "0", width: "552px", height: "792px" }, panel, `<svg viewBox="0 0 552 792" width="552" height="792"><defs>
+		<linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".45" stop-color="#e0a224"/><stop offset=".7" stop-color="#fff0a8"/><stop offset="1" stop-color="#8a5206"/></linearGradient>
+		<radialGradient id="bg2" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#d6c4ff"/><stop offset=".7" stop-color="#7a4dff"/><stop offset="1" stop-color="#2a0f7a"/></radialGradient></defs>
+		<g transform="translate(${cx} ${cy})" style="filter: drop-shadow(0 6px 8px rgba(0,0,0,.55))">
+			<circle r="170" fill="none" stroke="url(#bg1)" stroke-width="10"/>
+			<circle r="150" fill="none" stroke="#e8b84a" stroke-width="3" stroke-dasharray="4 10"/>
+			<g>${Array.from({ length: 8 }, (_, i) => `<path d="M0 -205 L18 -160 L0 -140 L-18 -160 Z" fill="url(#bg1)" stroke="#6a3c02" stroke-width="2" transform="rotate(${i * 45})"/>`).join("")}</g>
+			<path d="M0 -112 L97 0 L0 112 L-97 0 Z" fill="url(#bg1)" stroke="#6a3c02" stroke-width="4"/>
+			<path d="M0 -88 L76 0 L0 88 L-76 0 Z" fill="url(#bg2)" stroke="#6a3c02" stroke-width="3"/>
+			<path d="M0 -88 L76 0 L0 0 Z" fill="rgba(255,255,255,.35)"/>
+		</g></svg>`);
+	const q = el("div", { left: `${cx - 80}px`, top: `${cy - 70}px`, width: "160px", height: "140px", display: "flex", alignItems: "center", justifyContent: "center",
+		fontSize: "120px", color: "#ffe48a", WebkitTextStroke: "5px #5a2c00", paintOrder: "stroke fill", textShadow: "0 5px 0 rgba(0,0,0,.4), 0 0 24px rgba(255,220,120,.9)" }, panel, "?");
+	q.className = "text";
+	const rand = rng(3);
+	for (let i = 0; i < 12; i++) sparkle(panel, 40 + rand() * 472, 40 + rand() * 712, 14 + rand() * 18, "#ffe8a0", 0.5 + rand() * 0.5);
+	corners(card, r);
+}
+
+back();
+for (const r of R) front(r);
+window.cards = ["Back", ...R.map((r) => r.id)];
+window.ready = true;
+</script>
+</body>
+</html>

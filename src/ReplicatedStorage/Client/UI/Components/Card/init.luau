@@ -8,6 +8,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Art = require(script.Art)
 local Back = require(script.Back)
 local Front = require(script.Front)
 local Kit = require(script.Kit)
@@ -104,7 +105,11 @@ function Card.new(parent: Instance): Card
 		if card.Face then
 			card.Face.Frame:Destroy()
 		end
-		card.Face = if cardId then Front.Build(body, cardId) else Back.Build(body)
+		if cardId then
+			card.Face = if Art.HasFront(cardId) then Art.Front(body, cardId) else Front.Build(body, cardId)
+		else
+			card.Face = if Art.HasBack() then Art.Back(body) else Back.Build(body)
+		end
 	end
 
 	function self.Squash(_: Card, x: number, y: number, seconds: number)
