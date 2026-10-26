@@ -1,0 +1,6 @@
+std = "roblox_globals"
+
+[lints]
+global_usage = "deny"
+shadowing = "warn"
+unused_variable = "warn"

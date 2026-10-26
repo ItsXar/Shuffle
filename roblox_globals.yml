@@ -1,0 +1,53 @@
+---
+# Roblox globals on top of selene's Luau std. Kept in the repo so linting works offline and in CI
+# without downloading the Roblox API dump.
+base: luau
+name: roblox_globals
+globals:
+  game: { any: true }
+  workspace: { any: true }
+  script: { any: true }
+  plugin: { any: true }
+  shared: { any: true }
+  Enum: { any: true }
+  Instance: { any: true }
+  Axes: { any: true }
+  BrickColor: { any: true }
+  CFrame: { any: true }
+  Color3: { any: true }
+  ColorSequence: { any: true }
+  ColorSequenceKeypoint: { any: true }
+  DateTime: { any: true }
+  Faces: { any: true }
+  Font: { any: true }
+  NumberRange: { any: true }
+  NumberSequence: { any: true }
+  NumberSequenceKeypoint: { any: true }
+  OverlapParams: { any: true }
+  PathWaypoint: { any: true }
+  PhysicalProperties: { any: true }
+  Random: { any: true }
+  Ray: { any: true }
+  RaycastParams: { any: true }
+  Rect: { any: true }
+  Region3: { any: true }
+  Region3int16: { any: true }
+  SharedTable: { any: true }
+  TweenInfo: { any: true }
+  UDim: { any: true }
+  UDim2: { any: true }
+  Vector2: { any: true }
+  Vector2int16: { any: true }
+  Vector3: { any: true }
+  Vector3int16: { any: true }
+  task: { any: true }
+  warn: { any: true }
+  tick: { any: true }
+  time: { any: true }
+  elapsedTime: { any: true }
+  settings: { any: true }
+  UserSettings: { any: true }
+  typeof: { any: true }
+  utf8: { any: true }
+  buffer: { any: true }
+  Path2DControlPoint: { any: true }

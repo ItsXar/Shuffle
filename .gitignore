@@ -1,0 +1,12 @@
+# Generated
+sourcemap.json
+globalTypes.d.luau
+/build/
+
+# Studio lock files
+*.rbxl.lock
+*.rbxlx.lock
+
+# Editors / OS
+.DS_Store
+Thumbs.db
