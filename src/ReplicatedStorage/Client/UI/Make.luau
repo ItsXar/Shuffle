@@ -8,7 +8,7 @@
 	    })
 ]]
 
-local function Make(className: string, props: { [string]: any }?, children: { Instance }?): any
+local function Make(className: string, props: { [string]: any }?, children: { any }?): any
 	local instance: any = Instance.new(className)
 	local parent = nil
 	if props then
