@@ -31,10 +31,11 @@ function Ring.Play(at: Vector2, color: Color3, size: number, seconds: number?, t
 	end)
 end
 
--- Several rings one after another, for bigger hits.
+-- Several rings one after another, alternating colour and white, for bigger hits.
 function Ring.Wave(at: Vector2, color: Color3, size: number, count: number)
 	for index = 1, count do
-		task.delay((index - 1) * 0.12, Ring.Play, at, color, size * (1 + (index - 1) * 0.25), 0.6 + index * 0.1)
+		local tint = if index % 2 == 0 then Color3.new(1, 1, 1) else color
+		task.delay((index - 1) * 0.1, Ring.Play, at, tint, size * (1 + (index - 1) * 0.3), 0.5 + index * 0.1, 11 - index)
 	end
 end
 

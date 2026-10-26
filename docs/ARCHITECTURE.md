@@ -47,9 +47,9 @@ src/
       └─ UI/
          ├─ Root, Fit, Make, Motion, Paint    warstwy ScreenGui, skalowanie, budowanie, tweeny, kolory
          ├─ Components/  Card/ (init, Front, Back, Kit), Button
-         ├─ Fx/          Flash, Shake, Burst, Ring, Aura, Vignette, Rays, Banner
+         ├─ Fx/          Flash, Shake, Burst, Ring, Aura, Flood, Converge, Confetti, Rays, Banner
          └─ Screens/
-            ├─ Stage/    init, Show, Shuffle, Pick, Celebrate      karty u góry ekranu
+            ├─ Stage/    init, Show, Deal, Reels, Pick, Celebrate  karty u góry ekranu
             └─ Hud/      init                                      AUTO ROLL + ROLL na dole
 ```
 
@@ -72,15 +72,15 @@ src/
 ROLL / [R]  ->  RollController.Roll
             ->  remote "Roll"  ->  RollService: cooldown, luck (co 10. roll x3), Odds.RollHand,
                                    Odds.Best, ProgressService.Collect  ->  Odds.Result
-            ->  Stage:Play(result)
-                   Shuffle    rozdanie, karty kręcą się jak bębny, lądują od lewej
-                              (rzadka karta drży i świeci przed odsłonięciem)
-                   Pick       ramka-ruletka skacze po kartach i staje na najlepszej,
-                              reszta spada, zwycięzca na środek
-                   Celebrate  rzadkie: zaciemnienie i ładowanie karty światłem, potem naraz
-                              błysk / trzęsienie / fale / iskry / promienie / świecące krawędzie /
-                              unoszące się drobiny / napis — według rzadkości; na koniec karta
-                              rozpada się w iskry
-```
+            ->  Stage:Play(result, przycisk ROLL)
+                   Deal       3 zakryte karty wylatują z przycisku ROLL ze smugą i uderzają w miejsca
+                   Reels      karty otwierają się i kręcą jak bębny (twarze wpadają, poświata miga
+                              kolorem); rzadka karta zamyka się, drży i świeci przed odsłonięciem;
+                              odsłonięcie: biały błysk, squash, iskry, fala, gwiazdki
+                   Pick       promień światła przelatuje po kartach, wygrana podskakuje, reszta
+                              pęka w odłamki, wygrana obraca się na środek
+                   Celebrate  (Blackout) ciemność i smugi światła wpadające w kartę; potem naraz:
+                              błysk, trzęsienie, iskry, fale, promienie + drobiny, zalanie kolorem
+                              + banner, konfetti — według rzadkości; karta wraca do przycisku ROLL
 
 Siła każdego efektu dla każdej rzadkości: `Config/Rarities.luau` → `Fx`.

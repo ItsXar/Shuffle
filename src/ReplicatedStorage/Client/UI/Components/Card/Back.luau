@@ -1,7 +1,6 @@
 --!strict
 --[[
-	The face-down side: deep violet body with a faint diamond lattice and a glowing emblem that
-	slowly breathes, so even a closed card feels alive.
+	The face-down side: bright violet, a faint diamond lattice, a soft glow and a gold "?".
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,78 +10,40 @@ local Make = require(script.Parent.Parent.Parent.Make)
 local Paint = require(script.Parent.Parent.Parent.Paint)
 local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 
-local LATTICE_COLUMNS = 5
-local LATTICE_ROWS = 7
-local LATTICE_SIZE = 8
-local RIM_SPEED = 40
+local LATTICE_ROWS = 6
+local LATTICE_COLUMNS = 4
+local LATTICE_SIZE = 7
 
 local Back = {}
 
-local function diamond(parent: Instance, position: UDim2, size: UDim2, props: { [string]: any }): Frame
-	props.AnchorPoint = Vector2.new(0.5, 0.5)
-	props.Position = position
-	props.Size = size
-	props.Rotation = 45
-	props.BorderSizePixel = 0
-	props.Parent = parent
-	return Make("Frame", props, {
-		Make("UIAspectRatioConstraint", { DominantAxis = Enum.DominantAxis.Width }),
-	})
-end
-
-local function lattice(frame: Frame, color: Color3)
-	for row = 1, LATTICE_ROWS do
-		for column = 1, LATTICE_COLUMNS do
-			local shift = if row % 2 == 0 then 0.5 else 0
-			local x = (column - 0.5 + shift) / LATTICE_COLUMNS
-			local y = (row - 0.5) / LATTICE_ROWS
-			if x < 1 then
-				diamond(frame, UDim2.fromScale(x, y), UDim2.fromOffset(LATTICE_SIZE, LATTICE_SIZE), {
-					BackgroundColor3 = color,
-					BackgroundTransparency = 0.86,
-				})
-			end
+local function lattice(frame: Frame)
+	for row = 0, LATTICE_ROWS - 1 do
+		for column = 0, LATTICE_COLUMNS - 1 do
+			local x = (column + 0.5 + (row % 2) * 0.5) / (LATTICE_COLUMNS + 0.5)
+			local y = (row + 0.5) / LATTICE_ROWS
+			Make("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.07 + x * 0.86, 0.06 + y * 0.88),
+				Size = UDim2.fromOffset(LATTICE_SIZE, LATTICE_SIZE),
+				Rotation = 45,
+				BackgroundColor3 = Color3.new(1, 1, 1),
+				BackgroundTransparency = 0.82,
+				BorderSizePixel = 0,
+				Parent = frame,
+			})
 		end
 	end
 end
 
-local function emblem(frame: Frame, color: Color3): Frame
-	local holder: Frame = Make("Frame", {
-		Name = "Emblem",
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromScale(0.9, 0.9),
-		BackgroundTransparency = 1,
-		ZIndex = 2,
-		Parent = frame,
-	})
-	local scale: UIScale = Make("UIScale", { Parent = holder })
-	Kit.Orb(holder, UDim2.fromScale(0.5, 0.5), 0.8, color, 0.5)
-	local outline = diamond(holder, UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.42, 0.42), { BackgroundTransparency = 1 })
-	Make("UIStroke", { Thickness = 2, Color = color, Parent = outline })
-
-	local core = diamond(holder, UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.24, 0.24), {
-		BackgroundColor3 = Paint.Tint(color, 0.3),
-	})
-	Make("UIGradient", {
-		Rotation = 90,
-		Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(150, 150, 150)),
-		Parent = core,
-	})
-
-	Paint.Animate(holder, function(elapsed: number)
-		scale.Scale = 1 + 0.04 * math.sin(elapsed * 2.2)
-		core.Rotation = 45 + elapsed * 30
-	end)
-	return holder
-end
-
-function Back.Build(parent: Instance): Frame
+function Back.Build(parent: Instance): Kit.Face
 	local colors = Theme.Colors
-	local frame = Kit.Body(parent, colors.BackTop, colors.BackBottom, Kit.Metal(colors.BackEdge), RIM_SPEED)
-	lattice(frame, colors.BackEdge)
-	emblem(frame, colors.BackEdge)
-	return frame
+	local paint = ColorSequence.new(colors.BackTop, colors.BackBottom)
+	local frame = Kit.Body(parent, paint, Paint.Shade(colors.BackBottom, 0.5), 0.55)
+	lattice(frame)
+	Kit.Orb(frame, UDim2.fromScale(0.5, 0.5), 0.8, colors.BackGlow, { 0.86, 0.82, 0.78 })
+	local mark = UDim2.fromScale(0.5, 0.5)
+	Kit.Text(frame, "?", mark, UDim2.fromScale(0.5, 0.3), 74, colors.Gold, 3, Paint.Shade(colors.BackBottom, 0.6))
+	return { Frame = frame, Stars = nil }
 end
 
 return table.freeze(Back)

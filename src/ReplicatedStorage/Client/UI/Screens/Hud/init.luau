@@ -1,6 +1,7 @@
 --!strict
 --[[
-	The two buttons at the bottom of the screen: AUTO ROLL (toggle) and ROLL (breathes while idle).
+	The two buttons at the bottom of the screen: AUTO ROLL (toggle) and ROLL (breathes while idle,
+	punches when a roll starts; rolled cards fly out of it and back into it).
 	Shows state only: every press goes to the actions given by the owner (RollController).
 ]]
 
@@ -9,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Button = require(script.Parent.Parent.Components.Button)
 local Fit = require(script.Parent.Parent.Fit)
 local Make = require(script.Parent.Parent.Make)
+local Motion = require(script.Parent.Parent.Motion)
 local Paint = require(script.Parent.Parent.Paint)
 local Root = require(script.Parent.Parent.Root)
 local Theme = require(ReplicatedStorage.Shared.Config.Theme)
@@ -24,6 +26,8 @@ export type Actions = {
 export type Hud = {
 	SetBusy: (self: Hud, busy: boolean) -> (),
 	SetAuto: (self: Hud, on: boolean) -> (),
+	-- Where rolled cards fly out of and back into.
+	Origin: (self: Hud) -> GuiObject,
 }
 
 local Hud = {}
@@ -60,19 +64,28 @@ function Hud.new(actions: Actions): Hud
 
 	local busy = false
 	Paint.Animate(canvas, function(elapsed: number)
-		roll.Breath.Scale = if busy then 1 else 1 + BREATH * math.sin(elapsed * BREATH_SPEED)
+		if not busy then
+			roll.Breath.Scale = 1 + BREATH * math.sin(elapsed * BREATH_SPEED)
+		end
 	end)
 
 	local self = {} :: Hud
 
 	function self.SetBusy(_: Hud, value: boolean)
 		busy = value
+		if value then
+			Motion.Pop(roll.Breath, 0.85, 1, 0.3)
+		end
 		roll:SetText(if value then "ROLLING..." else "ROLL")
 		roll:SetColor(if value then colors.RollBusy else colors.Roll)
 	end
 
 	function self.SetAuto(_: Hud, on: boolean)
 		auto:SetColor(if on then colors.AutoOn else colors.AutoOff)
+	end
+
+	function self.Origin(_: Hud): GuiObject
+		return roll.Root
 	end
 
 	return self

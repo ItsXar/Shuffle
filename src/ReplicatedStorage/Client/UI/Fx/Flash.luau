@@ -8,7 +8,7 @@ local Motion = require(script.Parent.Parent.Motion)
 local Root = require(script.Parent.Parent.Root)
 local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 
-local RELEASE_SECONDS = 0.6
+local RELEASE_SECONDS = 0.5
 
 local Flash = {}
 
@@ -38,6 +38,7 @@ end
 -- Darkens the world behind the cards; call the returned function to lift it (safe to call twice).
 function Flash.Dim(amount: number, seconds: number): () -> ()
 	local frame = overlay("Dim", Theme.Colors.Ink, 1)
+	frame.ZIndex = 1
 	Motion.Tween(frame, seconds, { BackgroundTransparency = 1 - amount })
 	local released = false
 	return function()

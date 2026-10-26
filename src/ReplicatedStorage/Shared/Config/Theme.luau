@@ -16,9 +16,10 @@ return Seal(script, {
 		Ink = Color3.fromRGB(10, 8, 20),
 		Text = Color3.fromRGB(255, 255, 255),
 		Muted = Color3.fromRGB(176, 170, 204),
-		BackTop = Color3.fromRGB(40, 30, 82),
-		BackBottom = Color3.fromRGB(13, 9, 32),
-		BackEdge = Color3.fromRGB(146, 122, 255),
+		BackTop = Color3.fromRGB(122, 76, 255),
+		BackBottom = Color3.fromRGB(46, 18, 128),
+		BackGlow = Color3.fromRGB(220, 200, 255),
+		Gold = Color3.fromRGB(255, 214, 64),
 		Roll = Color3.fromRGB(255, 184, 36),
 		RollBusy = Color3.fromRGB(104, 100, 128),
 		AutoOff = Color3.fromRGB(70, 78, 106),
@@ -28,10 +29,11 @@ return Seal(script, {
 		New = Color3.fromRGB(255, 64, 96),
 	},
 
-	-- ScreenGui DisplayOrder per layer (Client/UI/Root).
+	-- ScreenGui DisplayOrder per layer (Client/UI/Root): Dim (blackout, colour flood, motes) sits
+	-- under the buttons so they stay readable; cards and effects are on top.
 	Layers = {
-		Hud = 1,
-		Dim = 2,
+		Dim = 1,
+		Hud = 2,
 		Stage = 3,
 		Fx = 4,
 	},
@@ -40,14 +42,14 @@ return Seal(script, {
 	MaxScale = 1,
 
 	Card = {
-		Size = Vector2.new(150, 210),
+		Size = Vector2.new(160, 224),
 		Gap = 22,
-		Corner = 12,
+		Corner = 14,
 	},
 
 	-- The card row at the top of the screen. HeightShare = part of the screen height it may use.
 	Stage = {
-		Design = Vector2.new(560, 330),
+		Design = Vector2.new(600, 340),
 		HeightShare = 0.4,
 		Top = 6,
 	},

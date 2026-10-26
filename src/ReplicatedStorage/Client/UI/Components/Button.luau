@@ -1,7 +1,7 @@
 --!strict
 --[[
-	Chunky game button: coloured face on a darker "base" so it reads as 3D, squishes when pressed,
-	grows on hover. Root carries a free UIScale (Breath) for idle animation by the owner.
+	Chunky game button: glossy coloured face on a darker "base" so it reads as 3D, with a light
+	band sweeping across it; squishes when pressed, grows on hover. Root carries a free UIScale (Breath) for idle animation by the owner.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,6 +16,15 @@ local DEPTH = 5
 local CORNER = 12
 local PRESSED = 0.9
 local HOVER = 1.05
+local SHINE_SPEED = 0.7
+
+local SHINE_BAND = NumberSequence.new({
+	NumberSequenceKeypoint.new(0, 1),
+	NumberSequenceKeypoint.new(0.45, 1),
+	NumberSequenceKeypoint.new(0.5, 0.55),
+	NumberSequenceKeypoint.new(0.55, 1),
+	NumberSequenceKeypoint.new(1, 1),
+})
 
 export type Options = {
 	Parent: Instance,
@@ -69,9 +78,25 @@ function Button.new(options: Options): Button
 	}, {
 		Make("UICorner", { CornerRadius = UDim.new(0, CORNER) }),
 		Make("UIStroke", { Thickness = 2, Color = Theme.Colors.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-		Make("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(190, 190, 190)) }),
 		press,
 	})
+	local paint: UIGradient = Make("UIGradient", { Rotation = 90, Parent = face })
+
+	-- Light band sliding across the face every few seconds.
+	local sweep: UIGradient = Make("UIGradient", { Rotation = 20, Transparency = SHINE_BAND })
+	Make("Frame", {
+		Name = "Shine",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		ZIndex = 3,
+		Parent = face,
+	}, {
+		Make("UICorner", { CornerRadius = UDim.new(0, CORNER) }),
+		sweep,
+	})
+	Paint.Animate(face, function(elapsed: number)
+		sweep.Offset = Vector2.new((elapsed * SHINE_SPEED) % 2.6 - 1.3, 0)
+	end)
 
 	local label: TextLabel = Make("TextLabel", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -82,6 +107,7 @@ function Button.new(options: Options): Button
 		TextColor3 = Theme.Colors.Text,
 		Font = Theme.Fonts.Display,
 		TextScaled = true,
+		ZIndex = 4,
 		Parent = face,
 	}, {
 		Make("UIStroke", { Thickness = 2, Color = Theme.Colors.Ink, Transparency = 0.2 }),
@@ -114,8 +140,13 @@ function Button.new(options: Options): Button
 	end
 
 	function self.SetColor(_: Button, color: Color3)
-		face.BackgroundColor3 = color
-		base.BackgroundColor3 = Paint.Shade(color, 0.45)
+		face.BackgroundColor3 = Color3.new(1, 1, 1)
+		paint.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Paint.Tint(color, 0.35)),
+			ColorSequenceKeypoint.new(0.5, color),
+			ColorSequenceKeypoint.new(1, Paint.Shade(color, 0.15)),
+		})
+		base.BackgroundColor3 = Paint.Shade(color, 0.5)
 	end
 
 	self:SetColor(options.Color)

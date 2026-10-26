@@ -1,8 +1,8 @@
 --!strict
 --[[
-	Big announcements on the Fx layer. Show slams the rarity name onto the screen
-	("LEGENDARY" + card name and odds); Toast is a smaller line ("LUCKY ROLL x3").
-	Both remove themselves; neither yields.
+	Big announcements on the Fx layer. Show sweeps a rarity-coloured band across the screen and
+	slams the rarity name onto it, card name and odds below; it returns the function that takes it
+	away. Toast is a single line that leaves on its own ("LUCKY ROLL x3").
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,36 +16,46 @@ local Rarities = require(ReplicatedStorage.Shared.Config.Rarities)
 local Root = require(script.Parent.Parent.Root)
 local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 
-local SLAM_FROM = 2.2
-local RISE = 40
+local SLAM_FROM = 3
+local LEAVE = 0.3
+local RISE = 30
+
+local BAND_FADE = NumberSequence.new({
+	NumberSequenceKeypoint.new(0, 1),
+	NumberSequenceKeypoint.new(0.2, 0.15),
+	NumberSequenceKeypoint.new(0.8, 0.15),
+	NumberSequenceKeypoint.new(1, 1),
+})
 
 local Banner = {}
 
 -- `props` is completed in place with the shared look and handed to Make.
-local function text(parent: Instance, props: { [string]: any }, stroke: number): TextLabel
-	props.AnchorPoint = Vector2.new(0.5, 0.5)
+local function text(parent: Instance, props: { [string]: any }, maxSize: number, stroke: number): TextLabel
+	props.AnchorPoint = props.AnchorPoint or Vector2.new(0.5, 0.5)
 	props.BackgroundTransparency = 1
 	props.TextScaled = true
 	props.TextTransparency = 1
+	props.ZIndex = 3
 	props.Parent = parent
 	return Make("TextLabel", props, {
+		Make("UITextSizeConstraint", { MaxTextSize = maxSize }),
 		Make("UIStroke", { Thickness = stroke, Color = Theme.Colors.Ink, Transparency = 1 }),
 	})
 end
 
-local function holder(position: UDim2, size: Vector2): (Frame, UIScale)
+local function holder(position: UDim2, size: Vector2): Frame
 	local unit = Fit.Unit()
-	local frame: Frame = Make("Frame", {
+	return Make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = position,
 		Size = UDim2.fromOffset(size.X * unit, size.Y * unit),
 		BackgroundTransparency = 1,
+		ZIndex = 30,
 		Parent = Root.Layer("Fx"),
 	})
-	return frame, Make("UIScale", { Parent = frame })
 end
 
-local function fadeLabels(frame: Frame, transparency: number, seconds: number)
+local function fade(frame: Frame, transparency: number, seconds: number)
 	for _, child in frame:GetDescendants() do
 		if child:IsA("TextLabel") then
 			Motion.Tween(child, seconds, { TextTransparency = transparency })
@@ -55,64 +65,90 @@ local function fadeLabels(frame: Frame, transparency: number, seconds: number)
 	end
 end
 
-local function leave(frame: Frame, after: number)
-	task.delay(after, function()
-		fadeLabels(frame, 1, 0.35)
-		Motion.Tween(frame, 0.35, { Position = frame.Position - UDim2.fromOffset(0, RISE) }).Completed:Once(function()
-			frame:Destroy()
-		end)
+local function leave(frame: Frame)
+	fade(frame, 1, LEAVE)
+	for _, child in frame:GetChildren() do
+		if child:IsA("Frame") then
+			Motion.Tween(child, LEAVE, { BackgroundTransparency = 1 })
+		end
+	end
+	local goal = frame.Position - UDim2.fromOffset(0, RISE)
+	Motion.Tween(frame, LEAVE, { Position = goal }).Completed:Once(function()
+		frame:Destroy()
 	end)
 end
 
-function Banner.Show(rarity: Rarities.Rarity, cardName: string, hold: number)
+function Banner.Show(rarity: Rarities.Rarity, cardName: string): () -> ()
 	local unit = Fit.Unit()
-	local frame, scale = holder(UDim2.fromScale(0.5, 0.56), Vector2.new(560, 110))
+	local frame = holder(UDim2.fromScale(0.5, 0.58), Vector2.new(900, 120))
+
+	local band: Frame = Make("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.42),
+		Size = UDim2.new(0, 0, 0, 74 * unit),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		BorderSizePixel = 0,
+		ZIndex = 1,
+		Parent = frame,
+	}, {
+		Make("UIGradient", {
+			Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Paint.Shade(rarity.Dark, 0.3)),
+				ColorSequenceKeypoint.new(0.5, rarity.Color),
+				ColorSequenceKeypoint.new(1, Paint.Shade(rarity.Dark, 0.3)),
+			}),
+			Transparency = BAND_FADE,
+		}),
+	})
+	Motion.Tween(band, 0.3, { Size = UDim2.new(1, 0, 0, 74 * unit) }, Enum.EasingStyle.Quart)
 
 	local title = text(frame, {
 		Text = string.upper(rarity.Name),
 		Font = Theme.Fonts.Display,
-		TextColor3 = Color3.new(1, 1, 1),
-		Position = UDim2.fromScale(0.5, 0.33),
-		Size = UDim2.fromScale(1, 0.66),
-	}, 3 * unit)
-	local paint: UIGradient = Make("UIGradient", {
-		Rotation = 90,
-		Color = ColorSequence.new(Paint.Tint(rarity.Color, 0.45), rarity.Color),
-		Parent = title,
-	})
-	if rarity.Effect == "Rainbow" then
-		Paint.Animate(title, function(elapsed: number)
-			paint.Color = Paint.Rainbow(elapsed * 0.4)
-		end)
-	end
+		TextColor3 = Theme.Colors.Text,
+		Position = UDim2.fromScale(0.5, 0.42),
+		Size = UDim2.fromScale(0.78, 0.53),
+	}, 60 * unit, 3 * unit)
+	local scale: UIScale = Make("UIScale", { Scale = SLAM_FROM, Parent = title })
+	Motion.Tween(scale, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+	Motion.Tween(title, 0.35, { TextTransparency = 0 })
+	Motion.Tween(title:FindFirstChildOfClass("UIStroke") :: UIStroke, 0.35, { Transparency = 0 })
 
-	text(frame, {
+	local sub = text(frame, {
 		Text = `{cardName}  •  {Odds.Format(rarity.Chance)}`,
 		Font = Theme.Fonts.Body,
 		TextColor3 = Theme.Colors.Text,
-		Position = UDim2.fromScale(0.5, 0.82),
-		Size = UDim2.fromScale(0.7, 0.22),
-	}, 2 * unit)
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0.8),
+		Size = UDim2.fromScale(0.56, 0.22),
+	}, 22 * unit, 2 * unit)
+	task.delay(0.2, function()
+		Motion.Tween(sub, 0.2, { TextTransparency = 0 })
+		Motion.Tween(sub:FindFirstChildOfClass("UIStroke") :: UIStroke, 0.2, { Transparency = 0.2 })
+	end)
 
-	scale.Scale = SLAM_FROM
-	Motion.Tween(scale, 0.38, { Scale = 1 }, Enum.EasingStyle.Back)
-	fadeLabels(frame, 0, 0.15)
-	leave(frame, hold)
+	local left = false
+	return function()
+		if not left then
+			left = true
+			leave(frame)
+		end
+	end
 end
 
 function Banner.Toast(message: string, color: Color3, hold: number)
 	local unit = Fit.Unit()
-	local frame, scale = holder(UDim2.fromScale(0.5, 0.5), Vector2.new(420, 42))
-	text(frame, {
+	local frame = holder(UDim2.fromScale(0.5, 0.5), Vector2.new(520, 50))
+	local label = text(frame, {
 		Text = message,
 		Font = Theme.Fonts.Display,
 		TextColor3 = color,
 		Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.fromScale(1, 1),
-	}, 2.5 * unit)
-	Motion.Pop(scale, 0.4, 1, 0.4)
-	fadeLabels(frame, 0, 0.15)
-	leave(frame, hold)
+	}, 44 * unit, 3 * unit)
+	Motion.Pop(Make("UIScale", { Parent = label }), 2, 1, 0.35)
+	fade(frame, 0, 0.15)
+	task.delay(hold, leave, frame)
 end
 
 return table.freeze(Banner)

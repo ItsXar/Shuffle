@@ -1,8 +1,9 @@
 --!strict
 --[[
 	The card row at the top of the screen. Play runs one roll show from the server's result:
-	Shuffle (deal + spin + lock) -> Pick (the system chooses the best card) -> Celebrate (the
-	payoff). Play yields until the show is over and always leaves the stage empty, even if a
+	Deal (cards fly out of `origin`, the ROLL button) -> Reels (spin and reveal) -> Pick (the
+	system chooses the best card) -> Celebrate (the payoff, then the card flies back into
+	`origin`). Play yields until the show is over and always leaves the stage empty, even if a
 	phase fails.
 ]]
 
@@ -10,22 +11,23 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Banner = require(script.Parent.Parent.Fx.Banner)
 local Celebrate = require(script.Celebrate)
+local Deal = require(script.Deal)
 local Fit = require(script.Parent.Parent.Fit)
 local Log = require(ReplicatedStorage.Shared.Core.Log)
 local Make = require(script.Parent.Parent.Make)
 local Odds = require(ReplicatedStorage.Shared.Domain.Odds)
 local Pick = require(script.Pick)
+local Reels = require(script.Reels)
 local Root = require(script.Parent.Parent.Root)
 local Shake = require(script.Parent.Parent.Fx.Shake)
 local Show = require(script.Show)
-local Shuffle = require(script.Shuffle)
 local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 
 local TAG = "Stage"
 local LUCKY_PAUSE = 0.7
 
 export type Stage = {
-	Play: (self: Stage, result: Odds.Result) -> (),
+	Play: (self: Stage, result: Odds.Result, origin: GuiObject) -> (),
 }
 
 local Stage = {}
@@ -45,14 +47,15 @@ function Stage.new(): Stage
 
 	local self = {} :: Stage
 
-	function self.Play(_: Stage, result: Odds.Result)
-		local show = Show.new(canvas, result)
+	function self.Play(_: Stage, result: Odds.Result, origin: GuiObject)
+		local show = Show.new(canvas, result, origin)
 		local ok, err = pcall(function()
 			if result.Lucky then
 				Banner.Toast(`🍀 LUCKY ROLL  x{result.Luck} LUCK`, Theme.Colors.Lucky, LUCKY_PAUSE)
 				task.wait(LUCKY_PAUSE)
 			end
-			Shuffle.Run(show)
+			Deal.Run(show)
+			Reels.Run(show)
 			Pick.Run(show)
 			Celebrate.Run(show)
 		end)

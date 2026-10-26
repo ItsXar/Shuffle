@@ -56,8 +56,8 @@ function Odds.Best(hand: { string }): number
 	return best
 end
 
--- 150 -> "1 in 150", 2500 -> "1 in 2.5K", 100000 -> "1 in 100K".
-function Odds.Format(chance: number): string
+-- 150 -> "150", 2500 -> "2.5K", 100000 -> "100K".
+local function compact(chance: number): string
 	local value, suffix = chance, ""
 	if chance >= 1e6 then
 		value, suffix = chance / 1e6, "M"
@@ -65,7 +65,17 @@ function Odds.Format(chance: number): string
 		value, suffix = chance / 1e3, "K"
 	end
 	local text = string.gsub(string.format("%.1f", value), "%.0$", "")
-	return `1 in {text}{suffix}`
+	return text .. suffix
+end
+
+-- "1 in 150"
+function Odds.Format(chance: number): string
+	return `1 in {compact(chance)}`
+end
+
+-- "1/150", for small badges.
+function Odds.Short(chance: number): string
+	return `1/{compact(chance)}`
 end
 
 return table.freeze(Odds)

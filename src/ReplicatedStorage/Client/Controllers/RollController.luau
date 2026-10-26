@@ -40,7 +40,7 @@ local function loop()
 	repeat
 		local result = request()
 		if result then
-			stage:Play(result)
+			stage:Play(result, hud:Origin())
 		else
 			task.wait(RETRY_DELAY)
 		end

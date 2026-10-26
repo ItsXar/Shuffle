@@ -1,7 +1,7 @@
 --!strict
 --[[
-	Building blocks shared by both sides of a card: the body (dark gradient, animated metallic rim,
-	inner hairline), labels, a soft round glow, and the holographic light sweep.
+	Building blocks shared by both sides of a card: the body (gradient, dark rim, white inner line),
+	scaled labels, a soft round glow, a slowly turning sunburst and the holographic light sweep.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,34 +12,38 @@ local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 
 local RIM = 3
 local INSET = 6
-local SHINE_SPEED = 0.8
-local ORB_RINGS = { 1, 0.74, 0.5, 0.3 }
+local SHINE_SPEED = 0.9
+local SUNBURST_BARS = 8
+local SUNBURST_WIDTH = 12
 
 local SHINE_BAND = NumberSequence.new({
 	NumberSequenceKeypoint.new(0, 1),
 	NumberSequenceKeypoint.new(0.44, 1),
-	NumberSequenceKeypoint.new(0.5, 0.6),
+	NumberSequenceKeypoint.new(0.5, 0.55),
 	NumberSequenceKeypoint.new(0.56, 1),
 	NumberSequenceKeypoint.new(1, 1),
 })
 
+local BAR_FADE = NumberSequence.new({
+	NumberSequenceKeypoint.new(0, 1),
+	NumberSequenceKeypoint.new(0.5, 0.7),
+	NumberSequenceKeypoint.new(1, 1),
+})
+
+export type Face = {
+	Frame: Frame,
+	Stars: TextLabel?,
+}
+
 local Kit = {}
 
--- Metallic rim colours: light, colour, dark, colour, light, so a rotating gradient glints.
-function Kit.Metal(color: Color3): ColorSequence
-	return ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Paint.Tint(color, 0.75)),
-		ColorSequenceKeypoint.new(0.25, color),
-		ColorSequenceKeypoint.new(0.5, Paint.Shade(color, 0.45)),
-		ColorSequenceKeypoint.new(0.75, color),
-		ColorSequenceKeypoint.new(1, Paint.Tint(color, 0.75)),
-	})
+local function corner(radius: number): UICorner
+	return Make("UICorner", { CornerRadius = UDim.new(0, radius) })
 end
 
--- The card body. The rim gradient spins at `rimSpeed` degrees per second (0 = still).
-function Kit.Body(parent: Instance, top: Color3, bottom: Color3, rim: ColorSequence, rimSpeed: number): (Frame, UIGradient)
-	local corner = Theme.Card.Corner
-	local rimPaint: UIGradient = Make("UIGradient", { Color = rim, Rotation = 45 })
+-- The card body: vertical `paint` gradient, dark rim in `edge`, white inner line.
+function Kit.Body(parent: Instance, paint: ColorSequence, edge: Color3, inset: number): (Frame, UIStroke)
+	local rim: UIStroke = Make("UIStroke", { Thickness = RIM, Color = edge, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	local frame: Frame = Make("Frame", {
 		Name = "Face",
 		Size = UDim2.fromScale(1, 1),
@@ -47,9 +51,9 @@ function Kit.Body(parent: Instance, top: Color3, bottom: Color3, rim: ColorSeque
 		ZIndex = 1,
 		Parent = parent,
 	}, {
-		Make("UICorner", { CornerRadius = UDim.new(0, corner) }),
-		Make("UIGradient", { Rotation = 90, Color = ColorSequence.new(top, bottom) }),
-		Make("UIStroke", { Thickness = RIM, Color = Color3.new(1, 1, 1), ApplyStrokeMode = Enum.ApplyStrokeMode.Border }, { rimPaint }),
+		corner(Theme.Card.Corner),
+		Make("UIGradient", { Rotation = 90, Color = paint }),
+		rim,
 	})
 	Make("Frame", {
 		Name = "Inset",
@@ -57,29 +61,25 @@ function Kit.Body(parent: Instance, top: Color3, bottom: Color3, rim: ColorSeque
 		Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.new(1, -INSET * 2, 1, -INSET * 2),
 		BackgroundTransparency = 1,
+		ZIndex = 2,
 		Parent = frame,
 	}, {
-		Make("UICorner", { CornerRadius = UDim.new(0, corner - INSET / 2) }),
-		Make("UIStroke", { Thickness = 1, Color = Color3.new(1, 1, 1), Transparency = 0.82 }),
+		corner(Theme.Card.Corner - 4),
+		Make("UIStroke", { Thickness = 2, Color = Color3.new(1, 1, 1), Transparency = inset }),
 	})
-	if rimSpeed > 0 then
-		Paint.Animate(frame, function(elapsed: number)
-			rimPaint.Rotation = (45 + elapsed * rimSpeed) % 360
-		end)
-	end
-	return frame, rimPaint
+	return frame, rim
 end
 
--- Scaled text, capped at `maxSize` so it stays crisp. `outline` adds a soft dark stroke.
+-- Scaled text capped at `maxSize`. `stroke` = outline thickness (0 = none) in `strokeColor`.
 function Kit.Text(
 	parent: Instance,
 	text: string,
-	font: Enum.Font,
 	position: UDim2,
 	size: UDim2,
-	color: Color3,
 	maxSize: number,
-	outline: boolean?
+	color: Color3,
+	stroke: number,
+	strokeColor: Color3?
 ): TextLabel
 	local label: TextLabel = Make("TextLabel", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -87,24 +87,53 @@ function Kit.Text(
 		Size = size,
 		BackgroundTransparency = 1,
 		Text = text,
-		Font = font,
+		Font = Theme.Fonts.Display,
 		TextColor3 = color,
 		TextScaled = true,
-		ZIndex = 3,
+		ZIndex = 4,
 		Parent = parent,
 	}, {
 		Make("UITextSizeConstraint", { MaxTextSize = maxSize }),
 	})
-	if outline ~= false then
-		Make("UIStroke", { Thickness = 1.5, Color = Theme.Colors.Ink, Transparency = 0.35, Parent = label })
+	if stroke > 0 then
+		Make("UIStroke", { Thickness = stroke, Color = strokeColor or Theme.Colors.Ink, Parent = label })
 	end
 	return label
 end
 
--- Soft round glow: stacked circles, more opaque towards the middle. `size` is a share of the parent width.
-function Kit.Orb(parent: Instance, position: UDim2, size: number, color: Color3, strength: number): Frame
+-- Soft round glow: three stacked circles. `size` is a share of the parent width.
+function Kit.Orb(parent: Instance, position: UDim2, size: number, color: Color3, transparency: { number }): Frame
 	local holder: Frame = Make("Frame", {
 		Name = "Orb",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = position,
+		Size = UDim2.fromScale(size, size),
+		BackgroundTransparency = 1,
+		ZIndex = 2,
+		Parent = parent,
+	}, {
+		Make("UIAspectRatioConstraint", { DominantAxis = Enum.DominantAxis.Width }),
+	})
+	for index, share in { 1, 0.72, 0.48 } do
+		Make("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromScale(share, share),
+			BackgroundColor3 = color,
+			BackgroundTransparency = transparency[index],
+			BorderSizePixel = 0,
+			Parent = holder,
+		}, {
+			Make("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		})
+	end
+	return holder
+end
+
+-- Soft white sunburst turning at `speed` degrees per second.
+function Kit.Sunburst(parent: Instance, position: UDim2, size: number, speed: number)
+	local holder: Frame = Make("Frame", {
+		Name = "Sunburst",
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = position,
 		Size = UDim2.fromScale(size, size),
@@ -114,20 +143,22 @@ function Kit.Orb(parent: Instance, position: UDim2, size: number, color: Color3,
 	}, {
 		Make("UIAspectRatioConstraint", { DominantAxis = Enum.DominantAxis.Width }),
 	})
-	for index, share in ORB_RINGS do
+	for index = 1, SUNBURST_BARS do
 		Make("Frame", {
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.fromScale(share, share),
-			BackgroundColor3 = Paint.Tint(color, (index - 1) * 0.15),
-			BackgroundTransparency = 1 - strength * 0.25,
+			Size = UDim2.new(0, SUNBURST_WIDTH, 1, 0),
+			Rotation = (index - 1) * 180 / SUNBURST_BARS,
+			BackgroundColor3 = Color3.new(1, 1, 1),
 			BorderSizePixel = 0,
 			Parent = holder,
 		}, {
-			Make("UICorner", { CornerRadius = UDim.new(1, 0) }),
+			Make("UIGradient", { Rotation = 90, Transparency = BAR_FADE }),
 		})
 	end
-	return holder
+	Paint.Animate(holder, function(elapsed: number)
+		holder.Rotation = elapsed * speed
+	end)
 end
 
 -- Holographic light band sweeping across the card, forever.
@@ -140,7 +171,7 @@ function Kit.Shine(frame: Frame)
 		ZIndex = 6,
 		Parent = frame,
 	}, {
-		Make("UICorner", { CornerRadius = UDim.new(0, Theme.Card.Corner) }),
+		corner(Theme.Card.Corner),
 		sweep,
 	})
 	Paint.Animate(frame, function(elapsed: number)

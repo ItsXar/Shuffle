@@ -1,7 +1,8 @@
 --!strict
 --[[
 	One playing card on screen. Shows its back or any catalog card, and gives the roll show the
-	handles it animates: Scale (pops), Glow (coloured halo), Dim, Flip and a corner Tag ("NEW!").
+	handles it animates: Scale (pops), Squash (squash and stretch), Glow (soft coloured halo),
+	Flash (white hit), Dim, and a corner Tag ("NEW"). Face is the side currently shown.
 	Where the card stands and when things happen is decided by the caller (Screens/Stage).
 ]]
 
@@ -9,30 +10,47 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Back = require(script.Back)
 local Front = require(script.Front)
+local Kit = require(script.Kit)
 local Make = require(script.Parent.Parent.Make)
 local Motion = require(script.Parent.Parent.Motion)
 local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 
 -- Soft halo behind the card: layers growing past the edge, each a share of the glow strength.
 local GLOW_LAYERS = {
-	{ Pad = 4, Weight = 0.5 },
-	{ Pad = 12, Weight = 0.28 },
-	{ Pad = 22, Weight = 0.14 },
-	{ Pad = 34, Weight = 0.07 },
+	{ Pad = 4, Weight = 0.55 },
+	{ Pad = 12, Weight = 0.3 },
+	{ Pad = 22, Weight = 0.16 },
+	{ Pad = 34, Weight = 0.08 },
 }
 
 export type Card = {
 	Root: Frame,
+	Body: Frame,
 	Scale: UIScale,
+	Face: Kit.Face,
 	Show: (self: Card, cardId: string?) -> (),
-	Flip: (self: Card, cardId: string?, seconds: number) -> (),
+	Squash: (self: Card, x: number, y: number, seconds: number) -> (),
 	Glow: (self: Card, color: Color3, strength: number, seconds: number?) -> (),
+	Flash: (self: Card, seconds: number) -> (),
 	Dim: (self: Card, amount: number, seconds: number) -> (),
 	Tag: (self: Card, text: string, color: Color3) -> (),
 	Destroy: (self: Card) -> (),
 }
 
 local Card = {}
+
+local function overlay(parent: Instance, name: string, color: Color3, zIndex: number): Frame
+	return Make("Frame", {
+		Name = name,
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = color,
+		BackgroundTransparency = 1,
+		ZIndex = zIndex,
+		Parent = parent,
+	}, {
+		Make("UICorner", { CornerRadius = UDim.new(0, Theme.Card.Corner) }),
+	})
+end
 
 local function halo(root: Frame): { Frame }
 	local layers = {}
@@ -61,12 +79,13 @@ function Card.new(parent: Instance): Card
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Size = UDim2.fromOffset(size.X, size.Y),
 		BackgroundTransparency = 1,
+		ZIndex = 2,
 		Parent = parent,
 	})
 	local scale: UIScale = Make("UIScale", { Parent = root })
 	local glow = halo(root)
 
-	-- Body holds the painted face; flipping squeezes its width to zero and back.
+	-- Body holds the painted face; squash and flip stretch it around its centre.
 	local body: Frame = Make("Frame", {
 		Name = "Body",
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -76,33 +95,21 @@ function Card.new(parent: Instance): Card
 		ZIndex = 2,
 		Parent = root,
 	})
-	local dim: Frame = Make("Frame", {
-		Name = "Dim",
-		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Color3.new(0, 0, 0),
-		BackgroundTransparency = 1,
-		ZIndex = 3,
-		Parent = body,
-	}, {
-		Make("UICorner", { CornerRadius = UDim.new(0, Theme.Card.Corner) }),
-	})
+	local flash = overlay(body, "Flash", Color3.new(1, 1, 1), 8)
+	local dim = overlay(body, "Dim", Color3.new(0, 0, 0), 9)
 
-	local face: Frame? = nil
-	local self = { Root = root, Scale = scale } :: Card
+	local self = { Root = root, Body = body, Scale = scale } :: Card
 
-	function self.Show(_: Card, cardId: string?)
-		if face then
-			face:Destroy()
+	function self.Show(card: Card, cardId: string?)
+		if card.Face then
+			card.Face.Frame:Destroy()
 		end
-		face = if cardId then Front.Build(body, cardId) else Back.Build(body)
+		card.Face = if cardId then Front.Build(body, cardId) else Back.Build(body)
 	end
 
-	-- Yields for `seconds`.
-	function self.Flip(card: Card, cardId: string?, seconds: number)
-		local half = seconds / 2
-		Motion.Await(Motion.Tween(body, half, { Size = UDim2.fromScale(0, 1) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In))
-		card:Show(cardId)
-		Motion.Await(Motion.Tween(body, half, { Size = UDim2.fromScale(1, 1) }, Enum.EasingStyle.Quad, Enum.EasingDirection.Out))
+	function self.Squash(_: Card, x: number, y: number, seconds: number)
+		body.Size = UDim2.fromScale(x, y)
+		Motion.Tween(body, seconds, { Size = UDim2.fromScale(1, 1) }, Enum.EasingStyle.Elastic)
 	end
 
 	-- Strength 0..1; without `seconds` the change is instant.
@@ -118,6 +125,11 @@ function Card.new(parent: Instance): Card
 		end
 	end
 
+	function self.Flash(_: Card, seconds: number)
+		flash.BackgroundTransparency = 0
+		Motion.Tween(flash, seconds, { BackgroundTransparency = 1 })
+	end
+
 	function self.Dim(_: Card, amount: number, seconds: number)
 		Motion.Tween(dim, seconds, { BackgroundTransparency = 1 - amount })
 	end
@@ -126,9 +138,9 @@ function Card.new(parent: Instance): Card
 		local tag: TextLabel = Make("TextLabel", {
 			Name = "Tag",
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(1, -12, 0, 10),
-			Size = UDim2.fromOffset(58, 24),
-			Rotation = 14,
+			Position = UDim2.new(0, 10, 0, 10),
+			Size = UDim2.fromOffset(52, 22),
+			Rotation = -14,
 			BackgroundColor3 = color,
 			Text = text,
 			TextColor3 = Theme.Colors.Text,
@@ -137,9 +149,9 @@ function Card.new(parent: Instance): Card
 			ZIndex = 4,
 			Parent = root,
 		}, {
-			Make("UICorner", { CornerRadius = UDim.new(0, 8) }),
+			Make("UICorner", { CornerRadius = UDim.new(0, 6) }),
 			Make("UIStroke", { Thickness = 2, Color = Theme.Colors.Text, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-			Make("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6) }),
+			Make("UIPadding", { PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5) }),
 		})
 		Motion.Pop(Make("UIScale", { Parent = tag }), 0, 1, 0.4)
 	end
@@ -148,6 +160,7 @@ function Card.new(parent: Instance): Card
 		root:Destroy()
 	end
 
+	self:Show(nil)
 	return self
 end
 
