@@ -17,6 +17,7 @@ local Root = require(script.Parent.Parent.Root)
 local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 
 local SLAM_FROM = 3
+local LETTER_STAGGER = 0.04
 local LEAVE = 0.3
 local RISE = 30
 
@@ -41,6 +42,47 @@ local function text(parent: Instance, props: { [string]: any }, maxSize: number,
 		Make("UITextSizeConstraint", { MaxTextSize = maxSize }),
 		Make("UIStroke", { Thickness = stroke, Color = Theme.Colors.Ink, Transparency = 1 }),
 	})
+end
+
+-- The title slams in letter by letter.
+local function letters(frame: Frame, word: string, size: number, stroke: number)
+	local row: Frame = Make("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.42),
+		Size = UDim2.fromScale(1, 0.53),
+		BackgroundTransparency = 1,
+		ZIndex = 3,
+		Parent = frame,
+	}, {
+		Make("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			VerticalAlignment = Enum.VerticalAlignment.Center,
+			Padding = UDim.new(0, size * 0.04),
+		}),
+	})
+	for index = 1, #word do
+		local letter: TextLabel = Make("TextLabel", {
+			AutomaticSize = Enum.AutomaticSize.X,
+			Size = UDim2.new(0, 0, 1, 0),
+			BackgroundTransparency = 1,
+			Text = string.sub(word, index, index),
+			TextSize = size,
+			TextColor3 = Theme.Colors.Text,
+			TextTransparency = 1,
+			Font = Theme.Fonts.Display,
+			LayoutOrder = index,
+			ZIndex = 3,
+			Parent = row,
+		})
+		local outline: UIStroke = Make("UIStroke", { Thickness = stroke, Color = Theme.Colors.Ink, Transparency = 1, Parent = letter })
+		local scale: UIScale = Make("UIScale", { Scale = SLAM_FROM, Parent = letter })
+		task.delay(index * LETTER_STAGGER, function()
+			Motion.Tween(scale, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
+			Motion.Tween(letter, 0.15, { TextTransparency = 0 })
+			Motion.Tween(outline, 0.15, { Transparency = 0 })
+		end)
+	end
 end
 
 local function holder(position: UDim2, size: Vector2): Frame
@@ -102,17 +144,7 @@ function Banner.Show(rarity: Rarities.Rarity, cardName: string): () -> ()
 	})
 	Motion.Tween(band, 0.3, { Size = UDim2.new(1, 0, 0, 74 * unit) }, Enum.EasingStyle.Quart)
 
-	local title = text(frame, {
-		Text = string.upper(rarity.Name),
-		Font = Theme.Fonts.Display,
-		TextColor3 = Theme.Colors.Text,
-		Position = UDim2.fromScale(0.5, 0.42),
-		Size = UDim2.fromScale(0.78, 0.53),
-	}, 60 * unit, 3 * unit)
-	local scale: UIScale = Make("UIScale", { Scale = SLAM_FROM, Parent = title })
-	Motion.Tween(scale, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
-	Motion.Tween(title, 0.35, { TextTransparency = 0 })
-	Motion.Tween(title:FindFirstChildOfClass("UIStroke") :: UIStroke, 0.35, { Transparency = 0 })
+	letters(frame, string.upper(rarity.Name), 60 * unit, 3 * unit)
 
 	local sub = text(frame, {
 		Text = `{cardName}  •  {Odds.Format(rarity.Chance)}`,
@@ -122,7 +154,7 @@ function Banner.Show(rarity: Rarities.Rarity, cardName: string): () -> ()
 		Position = UDim2.fromScale(0.5, 0.8),
 		Size = UDim2.fromScale(0.56, 0.22),
 	}, 22 * unit, 2 * unit)
-	task.delay(0.2, function()
+	task.delay(0.2 + #rarity.Name * LETTER_STAGGER, function()
 		Motion.Tween(sub, 0.2, { TextTransparency = 0 })
 		Motion.Tween(sub:FindFirstChildOfClass("UIStroke") :: UIStroke, 0.2, { Transparency = 0.2 })
 	end)

@@ -48,6 +48,23 @@ function Catalog.Card(id: string): Cards.Card
 	return card
 end
 
+function Catalog.Has(id: string): boolean
+	return cardById[id] ~= nil
+end
+
+-- Every card, most common first (then by name): the order of the collection.
+function Catalog.All(): { Cards.Card }
+	local list = table.clone(Cards)
+	table.sort(list, function(a: Cards.Card, b: Cards.Card): boolean
+		local tierA, tierB = tierById[a.Rarity], tierById[b.Rarity]
+		if tierA ~= tierB then
+			return tierA < tierB
+		end
+		return a.Name < b.Name
+	end)
+	return list
+end
+
 function Catalog.TierOf(cardId: string): number
 	return tierById[Catalog.Card(cardId).Rarity]
 end

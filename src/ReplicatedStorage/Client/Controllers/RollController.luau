@@ -1,14 +1,16 @@
 --!strict
 --[[
 	Owns the roll loop on the client: buttons and keys, asking the server for a roll, auto-roll,
-	and handing every result to the Stage (cards on top). Only one roll plays at a time; with auto
-	on, the next roll starts as soon as the previous show ends.
+	handing every result to the Stage (cards on top) and the won card to the BackpackController.
+	Only one roll plays at a time; with auto on, the next roll starts as soon as the previous show
+	ends.
 ]]
 
 local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Audio = require(script.Parent.Parent.Core.Audio)
+local BackpackController = require(script.Parent.BackpackController)
 local Hud = require(script.Parent.Parent.UI.Screens.Hud)
 local Input = require(ReplicatedStorage.Shared.Config.Input)
 local Log = require(ReplicatedStorage.Shared.Core.Log)
@@ -40,7 +42,9 @@ local function loop()
 	repeat
 		local result = request()
 		if result then
-			stage:Play(result, hud:Origin())
+			stage:Play(result, hud:Origin(), hud:Backpack())
+			BackpackController.Collect(result)
+			hud:BumpBackpack()
 		else
 			task.wait(RETRY_DELAY)
 		end
@@ -92,7 +96,9 @@ function RollController.Start()
 		OnAuto = function()
 			RollController.SetAuto(not auto)
 		end,
+		OnBackpack = BackpackController.Toggle,
 	})
+	BackpackController.Attach(hud)
 	bind("ShuffleRoll", Input.Roll, RollController.Roll)
 	bind("ShuffleAuto", Input.Auto, function()
 		RollController.SetAuto(not auto)

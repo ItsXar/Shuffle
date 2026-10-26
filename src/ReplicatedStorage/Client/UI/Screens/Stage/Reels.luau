@@ -35,6 +35,7 @@ local SPINS_PER_CARD = 4
 local NEAR_MISS_HOLD = 2.4
 local CLIMB_FROM = 2
 local DROP = 26
+local FLIP_SECONDS = 0.08
 -- The reel shows faces drawn with this much luck, so gold and pink flash by and tease.
 local TEASE_LUCK = 30
 
@@ -154,6 +155,8 @@ local function reveal(card: Card.Card, cardId: string)
 	local tier = Catalog.TierOf(cardId)
 	local fx = rarity.Fx
 
+	-- flip: the closed side turns edge-on, the face swings out with a squash
+	Motion.Await(Motion.Tween(card.Body, FLIP_SECONDS, { Size = UDim2.fromScale(0, 1.05) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In))
 	card:Show(cardId)
 	card:Flash(0.35)
 	card:Squash(1.28, 0.78, 0.55)

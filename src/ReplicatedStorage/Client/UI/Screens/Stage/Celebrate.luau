@@ -4,7 +4,7 @@
 	Blackout rarities charge up first: the world goes dark, light streaks rush into the card and it
 	shudders. Then everything hits at once: card flash, screen flash, shake, sparks, rings, and by
 	rarity a sunburst with rising motes, a colour flood with the big banner, confetti. The card
-	holds the spotlight, then flies back into the ROLL button.
+	holds the spotlight, then flies into the BACKPACK button.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -26,6 +26,7 @@ local Ring = require(script.Parent.Parent.Parent.Fx.Ring)
 local Shake = require(script.Parent.Parent.Parent.Fx.Shake)
 local Show = require(script.Parent.Show)
 local Theme = require(ReplicatedStorage.Shared.Config.Theme)
+local Zoom = require(script.Parent.Parent.Parent.Fx.Zoom)
 
 local BLACKOUT = 0.75
 local CHARGE_SECONDS = 0.7
@@ -37,6 +38,8 @@ local Celebrate = {}
 local function charge(show: Show.Show): () -> ()
 	local rarity, card = show.Rarity, show.Best
 	local lift = show.Scope:Add(Flash.Dim(BLACKOUT, 0.45))
+	show.Scope:Add(Zoom.Reset)
+	Zoom.To(-10, CHARGE_SECONDS, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 	Converge.Play(Show.ScreenCenter(card.Root), rarity.Color, 40 + show.Tier * 8, CHARGE_SECONDS)
 	card:Glow(rarity.Color, 1, CHARGE_SECONDS)
 	Motion.Tween(card.Scale, CHARGE_SECONDS, { Scale = Show.FocusScale * 0.9 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
@@ -79,6 +82,9 @@ local function hit(show: Show.Show, cleanup: { () -> () })
 	local at = Show.ScreenCenter(card.Root)
 
 	card:Flash(0.5)
+	if tier >= 3 then
+		Zoom.Punch(4 + tier * 1.5, 0.7)
+	end
 	Flash.Play(Paint.Tint(rarity.Color, 0.5), math.max(fx.Flash, 0.12), 0.7)
 	Shake.Add(math.max(fx.Shake, 0.12))
 	Burst.Play(at, rarity.Color, fx.Sparks + 20, 1 + tier * 0.08)
@@ -108,10 +114,10 @@ local function hit(show: Show.Show, cleanup: { () -> () })
 	end
 end
 
--- The card winds back and flies into the ROLL button, which pops.
+-- The card winds back and flies into the BACKPACK button.
 local function collect(show: Show.Show)
 	local card = show.Best
-	local goal = Show.ToCanvas(show.Canvas, Show.ScreenCenter(show.Origin))
+	local goal = Show.ToCanvas(show.Canvas, Show.ScreenCenter(show.Target))
 	local style, direction = Enum.EasingStyle.Back, Enum.EasingDirection.In
 	Motion.Tween(card.Scale, COLLECT_SECONDS, { Scale = 0.15 }, style, direction)
 	Motion.Tween(card.Root, COLLECT_SECONDS, { Position = goal, Rotation = 25 }, style, direction)
@@ -119,7 +125,7 @@ local function collect(show: Show.Show)
 	task.wait(COLLECT_SECONDS)
 
 	card.Root.Visible = false
-	local at = Show.ScreenCenter(show.Origin)
+	local at = Show.ScreenCenter(show.Target)
 	Burst.Play(at, show.Rarity.Color, 18, 0.5)
 	Ring.Play(at, show.Rarity.Color, 200, 0.4, 4)
 	Audio.Play("Snap", 1.2)

@@ -20,6 +20,12 @@ export type Result = {
 	UntilLucky: number, -- rolls left until the next lucky roll (1 = the next one)
 }
 
+-- What the server answers to "Inventory": how many of each card the player owns.
+export type Collection = {
+	Owned: { [string]: number },
+	Rolls: number,
+}
+
 local Odds = {}
 
 function Odds.RollTier(rng: Random, luck: number): number

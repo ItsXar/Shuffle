@@ -28,7 +28,7 @@ rojo serve               # start serwera Rojo (port 34872)
 
 1. Otwórz w Roblox Studio pusty **Baseplate** (albo `build/Shuffle.rbxl`).
 2. **Plugins → Rojo → Connect**, potem **Play**.
-3. **ROLL** (albo klawisz `R`) losuje, **AUTO ROLL** (`T`) losuje w kółko.
+3. **ROLL** (albo klawisz `R`) losuje, **AUTO ROLL** (`T`) losuje w kółko, **BACKPACK** pokazuje kolekcję.
 
 ```bash
 ./scripts/check.sh       # format + lint + typy + zasady architektury + build — to samo, co CI
@@ -58,4 +58,6 @@ Dopóki ID są puste, gra rysuje zastępcze karty z ramek. Grafiki rysuje `tools
 | Dźwięki (na razie wyłączone, `Enabled = false`) | `src/ReplicatedStorage/Shared/Config/Sounds.luau` |
 | Klawisze | `src/ReplicatedStorage/Shared/Config/Input.luau` |
 
-Postęp (liczba rolli, najlepsza karta) trwa na razie tylko do wyjścia z serwera — zapisu jeszcze nie ma.
+Kolekcja (plecak) i liczba rolli zapisują się w DataStore. W Studio zapis działa tylko po włączeniu
+*Game Settings → Security → Enable Studio Access to API Services* (miejsce musi być opublikowane);
+bez tego gra działa normalnie, ale postęp znika po wyjściu.

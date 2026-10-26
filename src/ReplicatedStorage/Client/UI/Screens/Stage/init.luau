@@ -2,8 +2,8 @@
 --[[
 	The card row at the top of the screen. Play runs one roll show from the server's result:
 	Deal (cards fly out of `origin`, the ROLL button) -> Reels (spin and reveal) -> Pick (the
-	system chooses the best card) -> Celebrate (the payoff, then the card flies back into
-	`origin`). Play yields until the show is over and always leaves the stage empty, even if a
+	system chooses the best card) -> Celebrate (the payoff, then the card flies into `target`,
+	the BACKPACK button). Play yields until the show is over and always leaves the stage empty, even if a
 	phase fails.
 ]]
 
@@ -27,7 +27,7 @@ local TAG = "Stage"
 local LUCKY_PAUSE = 0.7
 
 export type Stage = {
-	Play: (self: Stage, result: Odds.Result, origin: GuiObject) -> (),
+	Play: (self: Stage, result: Odds.Result, origin: GuiObject, target: GuiObject) -> (),
 }
 
 local Stage = {}
@@ -47,8 +47,8 @@ function Stage.new(): Stage
 
 	local self = {} :: Stage
 
-	function self.Play(_: Stage, result: Odds.Result, origin: GuiObject)
-		local show = Show.new(canvas, result, origin)
+	function self.Play(_: Stage, result: Odds.Result, origin: GuiObject, target: GuiObject)
+		local show = Show.new(canvas, result, origin, target)
 		local ok, err = pcall(function()
 			if result.Lucky then
 				Banner.Toast(`🍀 LUCKY ROLL  x{result.Luck} LUCK`, Theme.Colors.Lucky, LUCKY_PAUSE)

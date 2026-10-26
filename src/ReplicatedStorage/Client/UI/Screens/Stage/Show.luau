@@ -1,9 +1,9 @@
 --!strict
 --[[
 	State of one roll show on the Stage, shared by its phases (Deal -> Reels -> Pick -> Celebrate):
-	the canvas, the server's result, the dealt cards, the button the cards fly out of and back into,
-	and the geometry of the card row. Everything a show creates goes into its Scope, so one Clean()
-	always leaves the stage empty.
+	the canvas, the server's result, the dealt cards, the buttons the cards fly out of (Origin)
+	and the winner flies into (Target), and the geometry of the card row. Everything a show
+	creates goes into its Scope, so one Clean() always leaves the stage empty.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -23,6 +23,7 @@ local FOCUS_SCALE = 1.3
 export type Show = {
 	Canvas: Frame,
 	Origin: GuiObject,
+	Target: GuiObject,
 	Result: Odds.Result,
 	Cards: { Card.Card },
 	Best: Card.Card,
@@ -59,7 +60,7 @@ function Show.ToCanvas(canvas: GuiObject, point: Vector2): UDim2
 	return UDim2.fromOffset(inside.X, inside.Y)
 end
 
-function Show.new(canvas: Frame, result: Odds.Result, origin: GuiObject): Show
+function Show.new(canvas: Frame, result: Odds.Result, origin: GuiObject, target: GuiObject): Show
 	local scope = Scope.new()
 	local cards = {}
 	for index in result.Hand do
@@ -72,6 +73,7 @@ function Show.new(canvas: Frame, result: Odds.Result, origin: GuiObject): Show
 	return {
 		Canvas = canvas,
 		Origin = origin,
+		Target = target,
 		Result = result,
 		Cards = cards,
 		Best = cards[result.Best],

@@ -27,15 +27,21 @@ return Seal(script, {
 		Lucky = Color3.fromRGB(255, 214, 64),
 		Selector = Color3.fromRGB(255, 255, 255),
 		New = Color3.fromRGB(255, 64, 96),
+		Backpack = Color3.fromRGB(92, 132, 255),
+		PanelTop = Color3.fromRGB(48, 34, 104),
+		PanelBottom = Color3.fromRGB(16, 11, 40),
+		PanelEdge = Color3.fromRGB(120, 98, 220),
+		Close = Color3.fromRGB(240, 60, 76),
 	},
 
 	-- ScreenGui DisplayOrder per layer (Client/UI/Root): Dim (blackout, colour flood, motes) sits
-	-- under the buttons so they stay readable; cards and effects are on top.
+	-- under the buttons so they stay readable; cards and effects above; menus (backpack) on top.
 	Layers = {
 		Dim = 1,
 		Hud = 2,
 		Stage = 3,
 		Fx = 4,
+		Menu = 5,
 	},
 
 	-- Largest scale any canvas may reach on big screens.
@@ -54,9 +60,16 @@ return Seal(script, {
 		Top = 6,
 	},
 
-	-- The two buttons at the bottom of the screen.
+	-- The backpack window.
+	Backpack = {
+		Design = Vector2.new(780, 560),
+		HeightShare = 0.86,
+		Cell = Vector2.new(112, 157),
+	},
+
+	-- The buttons at the bottom of the screen.
 	Hud = {
-		Design = Vector2.new(400, 80),
+		Design = Vector2.new(460, 80),
 		HeightShare = 0.11,
 		Bottom = 18,
 	},

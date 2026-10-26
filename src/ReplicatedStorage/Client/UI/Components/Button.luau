@@ -32,6 +32,8 @@ export type Options = {
 	Size: UDim2,
 	Color: Color3,
 	Text: string,
+	-- Optional emoji above a smaller caption.
+	Icon: string?,
 	OnClick: () -> (),
 }
 
@@ -100,8 +102,8 @@ function Button.new(options: Options): Button
 
 	local label: TextLabel = Make("TextLabel", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromScale(0.8, 0.42),
+		Position = UDim2.fromScale(0.5, if options.Icon then 0.8 else 0.5),
+		Size = if options.Icon then UDim2.fromScale(0.9, 0.22) else UDim2.fromScale(0.8, 0.42),
 		BackgroundTransparency = 1,
 		Text = options.Text,
 		TextColor3 = Theme.Colors.Text,
@@ -112,6 +114,20 @@ function Button.new(options: Options): Button
 	}, {
 		Make("UIStroke", { Thickness = 2, Color = Theme.Colors.Ink, Transparency = 0.2 }),
 	})
+
+	if options.Icon then
+		Make("TextLabel", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.4),
+			Size = UDim2.fromScale(0.62, 0.56),
+			BackgroundTransparency = 1,
+			Text = options.Icon,
+			TextScaled = true,
+			Font = Theme.Fonts.Display,
+			ZIndex = 4,
+			Parent = face,
+		})
+	end
 
 	local function squish(goal: number)
 		Motion.Tween(press, 0.12, { Scale = goal }, Enum.EasingStyle.Back)

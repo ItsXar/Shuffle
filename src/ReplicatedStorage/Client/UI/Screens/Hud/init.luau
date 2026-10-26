@@ -1,12 +1,14 @@
 --!strict
 --[[
-	The two buttons at the bottom of the screen: AUTO ROLL (toggle) and ROLL (breathes while idle,
-	punches when a roll starts; rolled cards fly out of it and back into it).
+	The buttons at the bottom of the screen: BACKPACK (with a red badge counting cards found since
+	it was last opened; won cards fly into it), AUTO ROLL (toggle) and ROLL (breathes while idle,
+	punches when a roll starts; rolled cards fly out of it).
 	Shows state only: every press goes to the actions given by the owner (RollController).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Badge = require(script.Badge)
 local Button = require(script.Parent.Parent.Components.Button)
 local Fit = require(script.Parent.Parent.Fit)
 local Make = require(script.Parent.Parent.Make)
@@ -21,13 +23,18 @@ local BREATH_SPEED = 3.5
 export type Actions = {
 	OnRoll: () -> (),
 	OnAuto: () -> (),
+	OnBackpack: () -> (),
 }
 
 export type Hud = {
 	SetBusy: (self: Hud, busy: boolean) -> (),
 	SetAuto: (self: Hud, on: boolean) -> (),
-	-- Where rolled cards fly out of and back into.
+	SetBadge: (self: Hud, count: number) -> (),
+	-- Where rolled cards fly out of.
 	Origin: (self: Hud) -> GuiObject,
+	-- Where won cards fly into; it bumps when one lands.
+	Backpack: (self: Hud) -> GuiObject,
+	BumpBackpack: (self: Hud) -> (),
 }
 
 local Hud = {}
@@ -45,18 +52,28 @@ function Hud.new(actions: Actions): Hud
 	})
 	Fit.Attach(canvas, design, Theme.Hud.HeightShare)
 
+	local backpack = Button.new({
+		Parent = canvas,
+		Position = UDim2.fromOffset(43, 40),
+		Size = UDim2.fromOffset(66, 58),
+		Color = colors.Backpack,
+		Text = "BACKPACK",
+		Icon = "🎒",
+		OnClick = actions.OnBackpack,
+	})
+	local badge = Badge(backpack.Root)
 	local auto = Button.new({
 		Parent = canvas,
-		Position = UDim2.fromOffset(88, 40),
-		Size = UDim2.fromOffset(156, 54),
+		Position = UDim2.fromOffset(163, 40),
+		Size = UDim2.fromOffset(150, 54),
 		Color = colors.AutoOff,
 		Text = "AUTO ROLL",
 		OnClick = actions.OnAuto,
 	})
 	local roll = Button.new({
 		Parent = canvas,
-		Position = UDim2.fromOffset(284, 38),
-		Size = UDim2.fromOffset(212, 62),
+		Position = UDim2.fromOffset(350, 38),
+		Size = UDim2.fromOffset(200, 62),
 		Color = colors.Roll,
 		Text = "ROLL",
 		OnClick = actions.OnRoll,
@@ -84,8 +101,20 @@ function Hud.new(actions: Actions): Hud
 		auto:SetColor(if on then colors.AutoOn else colors.AutoOff)
 	end
 
+	function self.SetBadge(_: Hud, count: number)
+		badge:Set(count)
+	end
+
 	function self.Origin(_: Hud): GuiObject
 		return roll.Root
+	end
+
+	function self.Backpack(_: Hud): GuiObject
+		return backpack.Root
+	end
+
+	function self.BumpBackpack(_: Hud)
+		Motion.Pop(backpack.Breath, 1.25, 1, 0.4)
 	end
 
 	return self

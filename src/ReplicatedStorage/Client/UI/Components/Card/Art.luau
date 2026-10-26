@@ -58,6 +58,17 @@ function Art.HasFront(cardId: string): boolean
 	return asset(CardArt.Fronts[Catalog.RarityOf(cardId).Id]) ~= nil
 end
 
+-- A card the player has not found yet: its rarity frame, darkened, with "?" and "???".
+function Art.Locked(parent: Instance, cardId: string): Kit.Face
+	local frame = image(parent, asset(CardArt.Fronts[Catalog.RarityOf(cardId).Id]) :: string)
+	local picture = frame:FindFirstChildOfClass("ImageLabel") :: ImageLabel
+	picture.ImageColor3 = Color3.fromRGB(60, 60, 66)
+	local grey = Color3.fromRGB(150, 150, 165)
+	Kit.Text(frame, "?", UDim2.fromScale(0.5, ICON_Y), UDim2.fromScale(0.42, 0.3), 80, grey, 2)
+	Kit.Text(frame, "???", UDim2.fromScale(0.5, NAME_Y), UDim2.fromScale(0.68, 0.065), 22, grey, 0)
+	return { Frame = frame, Stars = nil }
+end
+
 function Art.Back(parent: Instance): Kit.Face
 	return { Frame = image(parent, asset(CardArt.Back) :: string), Stars = nil }
 end

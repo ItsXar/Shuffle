@@ -30,7 +30,7 @@ src/
 │  ├─ Boot.server.luau              Net.Setup + Loader
 │  └─ Services/
 │     ├─ Roll/RollService           remote "Roll": cooldown, szczęście, losowanie ręki, wybór najlepszej
-│     └─ Progress/ProgressService   rolle, posiadane karty, najlepsza rzadkość, leaderstats
+│     └─ Progress/ProgressService   rolle, kolekcja, leaderstats, remote "Inventory"; zapis przez Store (DataStore)
 │
 ├─ StarterPlayer/StarterPlayerScripts/Boot.client.luau    Loader
 │
@@ -42,15 +42,18 @@ src/
    │  ├─ Domain/    Catalog (wyszukiwanie kart/rzadkości), Odds (zasady losowania, typ Result)
    │  └─ Util/      Scope
    └─ Client/
-      ├─ Controllers/RollController     pętla: przycisk/klawisz -> serwer -> Stage, auto-roll
+      ├─ Controllers/RollController     pętla: przycisk/klawisz -> serwer -> Stage -> plecak, auto-roll
+      ├─ Controllers/BackpackController kolekcja klienta, nowe karty (licznik), okno plecaka
       ├─ Core/Audio                     dźwięki z Config/Sounds (na razie wyłączone: Sounds > Enabled)
       └─ UI/
          ├─ Root, Fit, Make, Motion, Paint    warstwy ScreenGui, skalowanie, budowanie, tweeny, kolory
-         ├─ Components/  Card/ (init, Art = karty z obrazków, Front/Back = zastępcze z ramek, Kit), Button
-         ├─ Fx/          Flash, Shake, Burst, Ring, Aura, Flood, Converge, Confetti, Rays, Banner
+         ├─ Components/  Card/ (init, Art = karty z obrazków, Front/Back = zastępcze z ramek, Kit),
+         │               MiniCard (karta w liście), Button
+         ├─ Fx/          Flash, Shake, Zoom, Burst, Ring, Aura, Flood, Converge, Confetti, Rays, Banner
          └─ Screens/
             ├─ Stage/    init, Show, Deal, Reels, Pick, Celebrate  karty u góry ekranu
-            └─ Hud/      init                                      AUTO ROLL + ROLL na dole
+            ├─ Hud/      init, Badge                               BACKPACK + AUTO ROLL + ROLL na dole
+            └─ Backpack/ init, Header, Tile                        okno kolekcji
 ```
 
 Poza `src/`: `assets/cards/` (PNG kart do wgrania), `tools/cardart/` (projekt kart w HTML/CSS +
@@ -62,7 +65,8 @@ Poza `src/`: `assets/cards/` (PNG kart do wgrania), `tools/cardart/` (projekt ka
 |---|---|
 | Remoty | `Shared/Net` |
 | Losowanie i wynik rolla | `RollService` |
-| Postęp gracza, leaderstats | `ProgressService` |
+| Postęp gracza (zapis), leaderstats | `ProgressService` (+ `Store`) |
+| Kolekcja po stronie klienta, okno plecaka | `BackpackController` |
 | Czy trwa roll, auto-roll, klawisze | `RollController` |
 | Karty na ekranie i ich pokaz | `Screens/Stage` |
 | Przyciski na dole | `Screens/Hud` |
