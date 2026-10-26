@@ -1,9 +1,9 @@
 --!strict
 --[[
 	The card row at the top of the screen. Play runs one roll show from the server's result:
-	Shuffle (deal + spin + lock) -> Pick (the system chooses the best card) -> Celebrate (payoff,
-	then the card flies into `target`). Play yields until the show is over and always leaves
-	the stage empty, even if a phase fails.
+	Shuffle (deal + spin + lock) -> Pick (the system chooses the best card) -> Celebrate (the
+	payoff). Play yields until the show is over and always leaves the stage empty, even if a
+	phase fails.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,7 +25,7 @@ local TAG = "Stage"
 local LUCKY_PAUSE = 0.7
 
 export type Stage = {
-	Play: (self: Stage, result: Odds.Result, target: GuiObject?) -> (),
+	Play: (self: Stage, result: Odds.Result) -> (),
 }
 
 local Stage = {}
@@ -45,7 +45,7 @@ function Stage.new(): Stage
 
 	local self = {} :: Stage
 
-	function self.Play(_: Stage, result: Odds.Result, target: GuiObject?)
+	function self.Play(_: Stage, result: Odds.Result)
 		local show = Show.new(canvas, result)
 		local ok, err = pcall(function()
 			if result.Lucky then
@@ -54,7 +54,7 @@ function Stage.new(): Stage
 			end
 			Shuffle.Run(show)
 			Pick.Run(show)
-			Celebrate.Run(show, target)
+			Celebrate.Run(show)
 		end)
 		show.Scope:Clean()
 		if not ok then

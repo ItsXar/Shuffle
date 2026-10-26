@@ -9,7 +9,7 @@ local Motion = require(script.Parent.Parent.Motion)
 local Paint = require(script.Parent.Parent.Paint)
 
 local RAY_COUNT = 10
-local RAY_WIDTH = 30
+local RAY_WIDTH = 0.055 -- share of the sunburst size
 local SPIN_SPEED = 28
 local CORE_RINGS = { 0.3, 0.45, 0.6 }
 
@@ -38,7 +38,7 @@ function Rays.Attach(parent: GuiObject, position: UDim2, color: Color3, size: nu
 		Make("Frame", {
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.new(0, RAY_WIDTH, 1, 0),
+			Size = UDim2.new(0, size * RAY_WIDTH, 1, 0),
 			Rotation = (index - 1) * 180 / RAY_COUNT,
 			BackgroundColor3 = Paint.Tint(color, 0.25),
 			BorderSizePixel = 0,

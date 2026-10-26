@@ -1,8 +1,8 @@
 --!strict
 --[[
 	Owns the roll loop on the client: buttons and keys, asking the server for a roll, auto-roll,
-	and handing every result to the Stage (cards on top) and then the Hud (stats). Only one roll
-	plays at a time; with auto on, the next roll starts as soon as the previous show ends.
+	and handing every result to the Stage (cards on top). Only one roll plays at a time; with auto
+	on, the next roll starts as soon as the previous show ends.
 ]]
 
 local ContextActionService = game:GetService("ContextActionService")
@@ -40,8 +40,7 @@ local function loop()
 	repeat
 		local result = request()
 		if result then
-			stage:Play(result, hud:Target())
-			hud:Update(result)
+			stage:Play(result)
 		else
 			task.wait(RETRY_DELAY)
 		end

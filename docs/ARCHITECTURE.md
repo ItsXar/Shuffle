@@ -42,15 +42,15 @@ src/
    │  ├─ Domain/    Catalog (wyszukiwanie kart/rzadkości), Odds (zasady losowania, typ Result)
    │  └─ Util/      Scope
    └─ Client/
-      ├─ Controllers/RollController     pętla: przycisk/klawisz -> serwer -> Stage -> Hud, auto-roll
-      ├─ Core/Audio                     dźwięki z Config/Sounds
+      ├─ Controllers/RollController     pętla: przycisk/klawisz -> serwer -> Stage, auto-roll
+      ├─ Core/Audio                     dźwięki z Config/Sounds (na razie wyłączone: Sounds > Enabled)
       └─ UI/
          ├─ Root, Fit, Make, Motion, Paint    warstwy ScreenGui, skalowanie, budowanie, tweeny, kolory
-         ├─ Components/  Card/ (init, Face), Button, Chip
-         ├─ Fx/          Flash, Shake, Burst, Rays, Banner
+         ├─ Components/  Card/ (init, Front, Back, Kit), Button
+         ├─ Fx/          Flash, Shake, Burst, Ring, Aura, Vignette, Rays, Banner
          └─ Screens/
             ├─ Stage/    init, Show, Shuffle, Pick, Celebrate      karty u góry ekranu
-            └─ Hud/      init, LuckyMeter                          przyciski i statystyki na dole
+            └─ Hud/      init                                      AUTO ROLL + ROLL na dole
 ```
 
 ## 4. Właściciele
@@ -62,7 +62,7 @@ src/
 | Postęp gracza, leaderstats | `ProgressService` |
 | Czy trwa roll, auto-roll, klawisze | `RollController` |
 | Karty na ekranie i ich pokaz | `Screens/Stage` |
-| Przyciski i liczniki | `Screens/Hud` |
+| Przyciski na dole | `Screens/Hud` |
 | Warstwy ScreenGui | `UI/Root` |
 | Trzęsienie kamery | `Fx/Shake` |
 
@@ -77,9 +77,10 @@ ROLL / [R]  ->  RollController.Roll
                               (rzadka karta drży i świeci przed odsłonięciem)
                    Pick       ramka-ruletka skacze po kartach i staje na najlepszej,
                               reszta spada, zwycięzca na środek
-                   Celebrate  zaciemnienie / błysk / iskry / promienie / napis — według rzadkości,
-                              potem karta wlatuje do licznika „Best”
-            ->  Hud:Update(result)
+                   Celebrate  rzadkie: zaciemnienie i ładowanie karty światłem, potem naraz
+                              błysk / trzęsienie / fale / iskry / promienie / świecące krawędzie /
+                              unoszące się drobiny / napis — według rzadkości; na koniec karta
+                              rozpada się w iskry
 ```
 
 Siła każdego efektu dla każdej rzadkości: `Config/Rarities.luau` → `Fx`.

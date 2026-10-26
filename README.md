@@ -2,7 +2,7 @@
 
 Gra Roblox typu „roll”: klikasz **ROLL**, u góry ekranu losują się **3 karty**, a system sam wybiera
 najlepszą i ją zachowuje. Każda rzadkość ma swój pokaz: od małego błysku po zaciemnienie ekranu,
-wybuch iskier, promienie, trzęsienie kamery i wielki napis.
+fale uderzeniowe, wybuch iskier, promienie, świecące krawędzie ekranu, trzęsienie kamery i napis.
 
 Kod jest zarządzany przez [Rojo](https://rojo.space): edytujesz pliki w `src/`, a Rojo na bieżąco
 synchronizuje je do Roblox Studio.
@@ -28,7 +28,7 @@ rojo serve               # start serwera Rojo (port 34872)
 
 1. Otwórz w Roblox Studio pusty **Baseplate** (albo `build/Shuffle.rbxl`).
 2. **Plugins → Rojo → Connect**, potem **Play**.
-3. **ROLL** (albo klawisz `R`) losuje, **AUTO** (`T`) losuje w kółko.
+3. **ROLL** (albo klawisz `R`) losuje, **AUTO ROLL** (`T`) losuje w kółko.
 
 ```bash
 ./scripts/check.sh       # format + lint + typy + zasady architektury + build — to samo, co CI
@@ -42,7 +42,7 @@ rojo serve               # start serwera Rojo (port 34872)
 | Karty (nazwa, rzadkość, ikona) | `src/ReplicatedStorage/Shared/Config/Cards.luau` |
 | Kart na losowanie, lucky roll, cooldown | `src/ReplicatedStorage/Shared/Config/Roll.luau` |
 | Kolory UI, rozmiary, czcionki | `src/ReplicatedStorage/Shared/Config/Theme.luau` |
-| Dźwięki | `src/ReplicatedStorage/Shared/Config/Sounds.luau` |
+| Dźwięki (na razie wyłączone, `Enabled = false`) | `src/ReplicatedStorage/Shared/Config/Sounds.luau` |
 | Klawisze | `src/ReplicatedStorage/Shared/Config/Input.luau` |
 
 Postęp (liczba rolli, najlepsza karta) trwa na razie tylko do wyjścia z serwera — zapisu jeszcze nie ma.

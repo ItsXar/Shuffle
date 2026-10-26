@@ -16,7 +16,7 @@ local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 local FIRST_HOP = 0.07
 local HOP_SLOWDOWN = 1.17
 local EXTRA_LAP_TIER = 5
-local SELECTOR_PAD = 22
+local SELECTOR_PAD = 16
 local FALL_DISTANCE = 420
 local FOCUS_SECONDS = 0.45
 
@@ -26,7 +26,7 @@ type Selector = { Frame: Frame, Stroke: UIStroke, Scale: UIScale }
 
 local function selector(show: Show.Show): Selector
 	local size = Theme.Card.Size
-	local stroke: UIStroke = Make("UIStroke", { Thickness = 6, Color = Theme.Colors.Selector })
+	local stroke: UIStroke = Make("UIStroke", { Thickness = 3, Color = Theme.Colors.Selector })
 	local scale: UIScale = Make("UIScale", {})
 	local frame: Frame = show.Scope:Add(Make("Frame", {
 		Name = "Selector",
@@ -41,6 +41,18 @@ local function selector(show: Show.Show): Selector
 		stroke,
 		scale,
 	}))
+	-- Pointer above the selected card.
+	Make("TextLabel", {
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 0, -2),
+		Size = UDim2.fromOffset(22, 16),
+		BackgroundTransparency = 1,
+		Text = "▼",
+		TextColor3 = Theme.Colors.Selector,
+		TextScaled = true,
+		Font = Theme.Fonts.Display,
+		Parent = frame,
+	})
 	return { Frame = frame, Stroke = stroke, Scale = scale }
 end
 
@@ -91,7 +103,7 @@ local function focus(show: Show.Show, target: Selector)
 		end
 	end
 
-	Motion.Tween(target.Stroke, 0.2, { Transparency = 1 })
+	target.Frame.Visible = false
 	Motion.Tween(show.Best.Root, FOCUS_SECONDS, { Position = Show.Focus() }, Enum.EasingStyle.Back)
 	Motion.Tween(show.Best.Scale, FOCUS_SECONDS, { Scale = Show.FocusScale }, Enum.EasingStyle.Back)
 	Audio.Play("Whoosh", 1.2)

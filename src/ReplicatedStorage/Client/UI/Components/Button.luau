@@ -1,7 +1,7 @@
 --!strict
 --[[
 	Chunky game button: coloured face on a darker "base" so it reads as 3D, squishes when pressed,
-	grows on hover, clicks. Root carries a free UIScale (Breath) for idle animation by the owner.
+	grows on hover. Root carries a free UIScale (Breath) for idle animation by the owner.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,8 +12,8 @@ local Motion = require(script.Parent.Parent.Motion)
 local Paint = require(script.Parent.Parent.Paint)
 local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 
-local DEPTH = 6
-local CORNER = 16
+local DEPTH = 5
+local CORNER = 12
 local PRESSED = 0.9
 local HOVER = 1.05
 
@@ -23,7 +23,6 @@ export type Options = {
 	Size: UDim2,
 	Color: Color3,
 	Text: string,
-	Hint: string?,
 	OnClick: () -> (),
 }
 
@@ -69,40 +68,24 @@ function Button.new(options: Options): Button
 		Parent = root,
 	}, {
 		Make("UICorner", { CornerRadius = UDim.new(0, CORNER) }),
-		Make("UIStroke", { Thickness = 3, Color = Theme.Colors.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-		Make("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(200, 200, 200)) }),
+		Make("UIStroke", { Thickness = 2, Color = Theme.Colors.Ink, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		Make("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(190, 190, 190)) }),
 		press,
 	})
 
 	local label: TextLabel = Make("TextLabel", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromScale(0.82, 0.58),
+		Size = UDim2.fromScale(0.8, 0.42),
 		BackgroundTransparency = 1,
 		Text = options.Text,
 		TextColor3 = Theme.Colors.Text,
-		Font = Theme.Fonts.Title,
+		Font = Theme.Fonts.Display,
 		TextScaled = true,
 		Parent = face,
 	}, {
-		Make("UIStroke", { Thickness = 3, Color = Theme.Colors.Ink }),
+		Make("UIStroke", { Thickness = 2, Color = Theme.Colors.Ink, Transparency = 0.2 }),
 	})
-
-	if options.Hint then
-		Make("TextLabel", {
-			AnchorPoint = Vector2.new(1, 1),
-			Position = UDim2.new(1, -8, 1, -4),
-			Size = UDim2.fromScale(0.3, 0.26),
-			BackgroundTransparency = 1,
-			Text = options.Hint,
-			TextColor3 = Theme.Colors.Text,
-			TextTransparency = 0.25,
-			TextXAlignment = Enum.TextXAlignment.Right,
-			Font = Theme.Fonts.Body,
-			TextScaled = true,
-			Parent = face,
-		})
-	end
 
 	local function squish(goal: number)
 		Motion.Tween(press, 0.12, { Scale = goal }, Enum.EasingStyle.Back)

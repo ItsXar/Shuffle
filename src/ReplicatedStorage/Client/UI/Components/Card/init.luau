@@ -7,15 +7,18 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Face = require(script.Face)
+local Back = require(script.Back)
+local Front = require(script.Front)
 local Make = require(script.Parent.Parent.Make)
 local Motion = require(script.Parent.Parent.Motion)
 local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 
--- Halo rings around the card: distance from the edge, line thickness, share of the glow strength.
-local GLOW_RINGS = {
-	{ Pad = 8, Thickness = 6, Weight = 1 },
-	{ Pad = 20, Thickness = 12, Weight = 0.45 },
+-- Soft halo behind the card: layers growing past the edge, each a share of the glow strength.
+local GLOW_LAYERS = {
+	{ Pad = 4, Weight = 0.5 },
+	{ Pad = 12, Weight = 0.28 },
+	{ Pad = 22, Weight = 0.14 },
+	{ Pad = 34, Weight = 0.07 },
 }
 
 export type Card = {
@@ -31,25 +34,24 @@ export type Card = {
 
 local Card = {}
 
-local function halo(root: Frame): { UIStroke }
-	local strokes = {}
-	for index, ring in GLOW_RINGS do
-		local stroke: UIStroke = Make("UIStroke", { Thickness = ring.Thickness, Transparency = 1 })
-		Make("Frame", {
+local function halo(root: Frame): { Frame }
+	local layers = {}
+	for index, layer in GLOW_LAYERS do
+		local frame: Frame = Make("Frame", {
 			Name = `Glow{index}`,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.new(1, ring.Pad * 2, 1, ring.Pad * 2),
+			Size = UDim2.new(1, layer.Pad * 2, 1, layer.Pad * 2),
 			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
 			ZIndex = 1,
 			Parent = root,
 		}, {
-			Make("UICorner", { CornerRadius = UDim.new(0, Theme.Card.Corner + ring.Pad) }),
-			stroke,
+			Make("UICorner", { CornerRadius = UDim.new(0, Theme.Card.Corner + layer.Pad) }),
 		})
-		table.insert(strokes, stroke)
+		table.insert(layers, frame)
 	end
-	return strokes
+	return layers
 end
 
 function Card.new(parent: Instance): Card
@@ -92,7 +94,7 @@ function Card.new(parent: Instance): Card
 		if face then
 			face:Destroy()
 		end
-		face = if cardId then Face.Front(body, cardId) else Face.Back(body)
+		face = if cardId then Front.Build(body, cardId) else Back.Build(body)
 	end
 
 	-- Yields for `seconds`.
@@ -105,13 +107,13 @@ function Card.new(parent: Instance): Card
 
 	-- Strength 0..1; without `seconds` the change is instant.
 	function self.Glow(_: Card, color: Color3, strength: number, seconds: number?)
-		for index, stroke in glow do
-			stroke.Color = color
-			local goal = 1 - strength * GLOW_RINGS[index].Weight
+		for index, layer in glow do
+			layer.BackgroundColor3 = color
+			local goal = 1 - strength * GLOW_LAYERS[index].Weight
 			if seconds and seconds > 0 then
-				Motion.Tween(stroke, seconds, { Transparency = goal })
+				Motion.Tween(layer, seconds, { BackgroundTransparency = goal })
 			else
-				stroke.Transparency = goal
+				layer.BackgroundTransparency = goal
 			end
 		end
 	end
@@ -125,12 +127,12 @@ function Card.new(parent: Instance): Card
 			Name = "Tag",
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.new(1, -12, 0, 10),
-			Size = UDim2.fromOffset(78, 32),
+			Size = UDim2.fromOffset(58, 24),
 			Rotation = 14,
 			BackgroundColor3 = color,
 			Text = text,
 			TextColor3 = Theme.Colors.Text,
-			Font = Theme.Fonts.Title,
+			Font = Theme.Fonts.Display,
 			TextScaled = true,
 			ZIndex = 4,
 			Parent = root,

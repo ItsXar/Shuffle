@@ -15,9 +15,9 @@ local Scope = require(ReplicatedStorage.Shared.Util.Scope)
 local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 
 -- Gap above the card row, and where the winner stands (centre) and how big it grows there.
-local ROW_TOP = 26
-local FOCUS_Y = 190
-local FOCUS_SCALE = 1.3
+local ROW_TOP = 22
+local FOCUS_Y = 178
+local FOCUS_SCALE = 1.25
 
 export type Show = {
 	Canvas: Frame,
@@ -48,13 +48,6 @@ end
 -- Screen-space centre of a gui, for effects drawn on the full-screen Fx layer.
 function Show.ScreenCenter(gui: GuiObject): Vector2
 	return gui.AbsolutePosition + gui.AbsoluteSize / 2
-end
-
--- A screen point in the canvas' own design pixels (undoes the canvas UIScale).
-function Show.ToCanvas(canvas: GuiObject, point: Vector2): UDim2
-	local scale = canvas.AbsoluteSize.X / Theme.Stage.Design.X
-	local inside = (point - canvas.AbsolutePosition) / scale
-	return UDim2.fromOffset(inside.X, inside.Y)
 end
 
 function Show.new(canvas: Frame, result: Odds.Result): Show

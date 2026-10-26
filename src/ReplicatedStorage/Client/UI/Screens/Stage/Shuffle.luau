@@ -16,6 +16,7 @@ local Log = require(ReplicatedStorage.Shared.Core.Log)
 local Motion = require(script.Parent.Parent.Parent.Motion)
 local Odds = require(ReplicatedStorage.Shared.Domain.Odds)
 local Rarities = require(ReplicatedStorage.Shared.Config.Rarities)
+local Ring = require(script.Parent.Parent.Parent.Fx.Ring)
 local Shake = require(script.Parent.Parent.Parent.Fx.Shake)
 local Show = require(script.Parent.Show)
 
@@ -78,7 +79,11 @@ local function land(card: Card.Card, cardId: string)
 	if tier >= 3 then
 		Audio.Play("Reveal", 0.8 + tier * 0.08, 0.7)
 	end
-	Burst.Play(Show.ScreenCenter(card.Root), rarity.Color, math.floor(fx.Sparks * 0.4), 0.7)
+	local center = Show.ScreenCenter(card.Root)
+	Burst.Play(center, rarity.Color, math.floor(fx.Sparks * 0.4), 0.7)
+	if tier >= 2 then
+		Ring.Play(center, rarity.Color, 200 + tier * 30, 0.5, 4 + tier)
+	end
 	Shake.Add(fx.Shake * 0.5)
 	if tier >= 4 then
 		Flash.Play(rarity.Color, fx.Flash * 0.4, 0.35)

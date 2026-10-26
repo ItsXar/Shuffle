@@ -1,7 +1,7 @@
 --!strict
 --[[
 	Big announcements on the Fx layer. Show slams the rarity name onto the screen
-	("LEGENDARY!" + card name and odds); Toast is a smaller line ("LUCKY ROLL x3").
+	("LEGENDARY" + card name and odds); Toast is a smaller line ("LUCKY ROLL x3").
 	Both remove themselves; neither yields.
 ]]
 
@@ -16,7 +16,7 @@ local Rarities = require(ReplicatedStorage.Shared.Config.Rarities)
 local Root = require(script.Parent.Parent.Root)
 local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 
-local SLAM_FROM = 2.6
+local SLAM_FROM = 2.2
 local RISE = 40
 
 local Banner = {}
@@ -66,15 +66,15 @@ end
 
 function Banner.Show(rarity: Rarities.Rarity, cardName: string, hold: number)
 	local unit = Fit.Unit()
-	local frame, scale = holder(UDim2.fromScale(0.5, 0.6), Vector2.new(760, 170))
+	local frame, scale = holder(UDim2.fromScale(0.5, 0.56), Vector2.new(560, 110))
 
 	local title = text(frame, {
-		Text = `{string.upper(rarity.Name)}!`,
-		Font = Theme.Fonts.Title,
+		Text = string.upper(rarity.Name),
+		Font = Theme.Fonts.Display,
 		TextColor3 = Color3.new(1, 1, 1),
 		Position = UDim2.fromScale(0.5, 0.33),
 		Size = UDim2.fromScale(1, 0.66),
-	}, 5 * unit)
+	}, 3 * unit)
 	local paint: UIGradient = Make("UIGradient", {
 		Rotation = 90,
 		Color = ColorSequence.new(Paint.Tint(rarity.Color, 0.45), rarity.Color),
@@ -91,8 +91,8 @@ function Banner.Show(rarity: Rarities.Rarity, cardName: string, hold: number)
 		Font = Theme.Fonts.Body,
 		TextColor3 = Theme.Colors.Text,
 		Position = UDim2.fromScale(0.5, 0.82),
-		Size = UDim2.fromScale(0.8, 0.26),
-	}, 3 * unit)
+		Size = UDim2.fromScale(0.7, 0.22),
+	}, 2 * unit)
 
 	scale.Scale = SLAM_FROM
 	Motion.Tween(scale, 0.38, { Scale = 1 }, Enum.EasingStyle.Back)
@@ -102,14 +102,14 @@ end
 
 function Banner.Toast(message: string, color: Color3, hold: number)
 	local unit = Fit.Unit()
-	local frame, scale = holder(UDim2.fromScale(0.5, 0.5), Vector2.new(560, 64))
+	local frame, scale = holder(UDim2.fromScale(0.5, 0.5), Vector2.new(420, 42))
 	text(frame, {
 		Text = message,
-		Font = Theme.Fonts.Title,
+		Font = Theme.Fonts.Display,
 		TextColor3 = color,
 		Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.fromScale(1, 1),
-	}, 4 * unit)
+	}, 2.5 * unit)
 	Motion.Pop(scale, 0.4, 1, 0.4)
 	fadeLabels(frame, 0, 0.15)
 	leave(frame, hold)

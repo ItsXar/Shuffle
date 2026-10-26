@@ -1,7 +1,7 @@
 --!strict
 --[[
-	Plays the sounds named in Config/Sounds. Each call plays a fresh copy, so the same sound can
-	overlap itself (fast reel ticks) and every copy can have its own pitch.
+	Plays the sounds named in Config/Sounds (silent while Config/Sounds > Enabled is off). Each call
+	plays a fresh copy, so the same sound can overlap itself and every copy can have its own pitch.
 ]]
 
 local ContentProvider = game:GetService("ContentProvider")
@@ -21,7 +21,7 @@ local function template(name: string): Sound
 	if existing then
 		return existing
 	end
-	local spec = Sounds[name]
+	local spec = Sounds.List[name]
 	local sound = Instance.new("Sound")
 	sound.Name = name
 	sound.SoundId = spec.Id
@@ -31,6 +31,9 @@ local function template(name: string): Sound
 end
 
 function Audio.Play(name: string, pitch: number?, volume: number?)
+	if not Sounds.Enabled then
+		return
+	end
 	local sound = template(name):Clone()
 	sound.PlaybackSpeed = pitch or 1
 	sound.Volume *= volume or 1
@@ -48,8 +51,11 @@ end
 
 -- Loads every sound in the background so the first roll is not silent.
 function Audio.Preload()
+	if not Sounds.Enabled then
+		return
+	end
 	local list = {}
-	for name in Sounds do
+	for name in Sounds.List do
 		table.insert(list, template(name))
 	end
 	task.spawn(function()
