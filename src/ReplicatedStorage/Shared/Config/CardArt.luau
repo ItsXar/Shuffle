@@ -8,16 +8,16 @@
 local Seal = require(script.Parent.Parent.Core.Seal)
 
 return Seal(script, {
-	Back = "",
+	Back = "104699222511109",
 	Fronts = {
-		Common = "",
-		Uncommon = "",
-		Rare = "",
-		Epic = "",
-		Legendary = "",
-		Mythic = "",
-		Divine = "",
-		Celestial = "",
-		Secret = "",
+		Common = "124272279161137",
+		Uncommon = "108080585418673",
+		Rare = "71511179530262",
+		Epic = "121966631236058",
+		Legendary = "117418024455321",
+		Mythic = "104098957921952",
+		Divine = "100442046803306",
+		Celestial = "76781360840866",
+		Secret = "126304193852297",
 	},
 })
