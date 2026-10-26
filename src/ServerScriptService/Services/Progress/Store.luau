@@ -89,7 +89,7 @@ function Store.Save(userId: number, data: Data): boolean
 		return false
 	end
 	local ok, err = attempt(function()
-		target:SetAsync(key(userId), data, { userId })
+		return target:SetAsync(key(userId), data, { userId })
 	end)
 	if not ok then
 		Log.Warn(TAG, `Save failed for {userId}: {err}`)
