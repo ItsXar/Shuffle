@@ -17,7 +17,7 @@ synchronizuje je do Roblox Studio.
    ```bash
    rokit install          # instaluje przypięte wersje: rojo, stylua, selene, luau-lsp
    ```
-2. Zainstaluj plugin Rojo w Studio: `rojo plugin install` (wersja 7.4.x, taka jak w `rokit.toml`).
+2. Zainstaluj plugin Rojo w Studio: `rojo plugin install` (wersja 7.7.x, taka jak w `rokit.toml`). Plugin Rojo z Creator Store też musi być 7.7.x.
 3. VS Code: zainstaluj polecane rozszerzenia (`.vscode/extensions.json`).
 
 ## Praca
