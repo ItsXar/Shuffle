@@ -15,7 +15,6 @@ return Seal(script, {
 	Colors = {
 		Ink = Color3.fromRGB(10, 8, 20),
 		Text = Color3.fromRGB(255, 255, 255),
-		Muted = Color3.fromRGB(176, 170, 204),
 		BackTop = Color3.fromRGB(122, 76, 255),
 		BackBottom = Color3.fromRGB(46, 18, 128),
 		BackGlow = Color3.fromRGB(220, 200, 255),
@@ -28,10 +27,15 @@ return Seal(script, {
 		Selector = Color3.fromRGB(255, 255, 255),
 		New = Color3.fromRGB(255, 64, 96),
 		Backpack = Color3.fromRGB(92, 132, 255),
-		PanelTop = Color3.fromRGB(48, 34, 104),
-		PanelBottom = Color3.fromRGB(16, 11, 40),
-		PanelEdge = Color3.fromRGB(120, 98, 220),
-		Close = Color3.fromRGB(240, 60, 76),
+		Panel = Color3.fromRGB(24, 20, 40),
+		Section = Color3.fromRGB(34, 29, 56),
+		Edge = Color3.fromRGB(64, 56, 102),
+		Muted = Color3.fromRGB(150, 142, 190),
+		Equipped = Color3.fromRGB(70, 220, 120),
+		Equip = Color3.fromRGB(52, 200, 120),
+		Damage = Color3.fromRGB(255, 236, 120),
+		Crit = Color3.fromRGB(255, 120, 60),
+		Health = Color3.fromRGB(255, 70, 80),
 	},
 
 	-- ScreenGui DisplayOrder per layer (Client/UI/Root): Dim (blackout, colour flood, motes) sits
@@ -62,15 +66,16 @@ return Seal(script, {
 
 	-- The backpack window.
 	Backpack = {
-		Design = Vector2.new(780, 560),
-		HeightShare = 0.86,
-		Cell = Vector2.new(112, 157),
+		Design = Vector2.new(880, 600),
+		HeightShare = 0.9,
+		Cell = Vector2.new(92, 129),
+		Slot = Vector2.new(96, 134),
 	},
 
-	-- The buttons at the bottom of the screen.
+	-- The bottom of the screen: the deck bar on top, the buttons under it.
 	Hud = {
-		Design = Vector2.new(460, 80),
-		HeightShare = 0.11,
+		Design = Vector2.new(460, 190),
+		HeightShare = 0.24,
 		Bottom = 18,
 	},
 })

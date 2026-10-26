@@ -1,15 +1,17 @@
 --!strict
 --[[
-	Owns what a player has collected: number of rolls and how many of each card. Loaded from the
-	DataStore when the player joins (Store), saved when they leave, every few minutes and when the
-	server shuts down. Answers the "Inventory" remote, and mirrors rolls and best rarity into
-	leaderstats so everyone in the server sees them.
+	Owns what a player has: number of rolls, how many of each card, the deck (Deck) and the
+	monster level reached. Loaded from the DataStore when the player joins (Store), saved when
+	they leave, every few minutes and when the server shuts down. Answers "Inventory" and
+	"SetDeck", fills empty deck slots with the best cards, and mirrors rolls, best rarity and
+	level into leaderstats so everyone in the server sees them.
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Catalog = require(ReplicatedStorage.Shared.Domain.Catalog)
+local Deck = require(ReplicatedStorage.Shared.Domain.Deck)
 local Net = require(ReplicatedStorage.Shared.Net)
 local Odds = require(ReplicatedStorage.Shared.Domain.Odds)
 local Store = require(script.Parent.Store)
@@ -25,6 +27,7 @@ type Progress = {
 	Dirty: boolean,
 	RollsValue: IntValue,
 	BestValue: StringValue,
+	LevelValue: IntValue,
 }
 
 local ProgressService = {}
@@ -41,15 +44,19 @@ end
 
 local function refresh(state: Progress)
 	state.RollsValue.Value = state.Data.Rolls
+	state.LevelValue.Value = state.Data.Level
 	local tier = bestTier(state.Data.Owned)
 	state.BestValue.Value = if tier > 0 then Catalog.Rarity(tier).Name else "-"
 end
 
 -- Keeps only what this version of the game understands.
 local function clean(raw: any): Store.Data
-	local data: Store.Data = { Rolls = 0, Owned = {} }
+	local data: Store.Data = { Rolls = 0, Owned = {}, Deck = {}, Level = 1 }
 	if type(raw) ~= "table" then
 		return data
+	end
+	if type(raw.Level) == "number" then
+		data.Level = math.max(1, math.floor(raw.Level))
 	end
 	if type(raw.Rolls) == "number" then
 		data.Rolls = math.max(0, math.floor(raw.Rolls))
@@ -61,10 +68,11 @@ local function clean(raw: any): Store.Data
 			end
 		end
 	end
+	data.Deck = Deck.Clean(raw.Deck, data.Owned)
 	return data
 end
 
-local function leaderstats(player: Player): (IntValue, StringValue)
+local function leaderstats(player: Player): (IntValue, StringValue, IntValue)
 	local folder = Instance.new("Folder")
 	folder.Name = "leaderstats"
 	local rolls = Instance.new("IntValue")
@@ -74,8 +82,12 @@ local function leaderstats(player: Player): (IntValue, StringValue)
 	best.Name = "Best"
 	best.Value = "-"
 	best.Parent = folder
+	local level = Instance.new("IntValue")
+	level.Name = "Level"
+	level.Value = 1
+	level.Parent = folder
 	folder.Parent = player
-	return rolls, best
+	return rolls, best, level
 end
 
 local function load(player: Player, state: Progress)
@@ -87,6 +99,7 @@ local function load(player: Player, state: Progress)
 	if saved then
 		state.Data = clean(saved)
 	end
+	Deck.Fill(state.Data.Deck, state.Data.Owned)
 	state.Ready = true
 	refresh(state)
 end
@@ -95,14 +108,15 @@ local function setup(player: Player)
 	if progress[player] then
 		return
 	end
-	local rollsValue, bestValue = leaderstats(player)
+	local rollsValue, bestValue, levelValue = leaderstats(player)
 	local state: Progress = {
-		Data = { Rolls = 0, Owned = {} },
+		Data = { Rolls = 0, Owned = {}, Deck = {}, Level = 1 },
 		Loaded = false,
 		Ready = false,
 		Dirty = false,
 		RollsValue = rollsValue,
 		BestValue = bestValue,
+		LevelValue = levelValue,
 	}
 	progress[player] = state
 	task.spawn(load, player, state)
@@ -148,21 +162,52 @@ function ProgressService.Collect(player: Player, cardId: string): boolean
 	end
 	local count = (state.Data.Owned[cardId] or 0) + 1
 	state.Data.Owned[cardId] = count
+	Deck.Fill(state.Data.Deck, state.Data.Owned)
 	state.Dirty = true
 	refresh(state)
 	return count == 1
 end
 
+-- The player's data once loaded, for reading only (BattleService); nil while still loading.
+function ProgressService.Peek(player: Player): Store.Data?
+	local state = progress[player]
+	return if state and state.Ready then state.Data else nil
+end
+
+-- The monster of the current level died: one level up. Returns the new level.
+function ProgressService.LevelUp(player: Player): number
+	local state = progress[player]
+	if not state then
+		return 1
+	end
+	state.Data.Level += 1
+	state.Dirty = true
+	state.LevelValue.Value = state.Data.Level
+	return state.Data.Level
+end
+
+local function setDeck(player: Player, raw: any): { string }
+	local state = ready(player)
+	if not state then
+		return {}
+	end
+	state.Data.Deck = Deck.Clean(raw, state.Data.Owned)
+	state.Dirty = true
+	return table.clone(state.Data.Deck)
+end
+
 local function inventory(player: Player): Odds.Collection
 	local state = ready(player)
 	if not state then
-		return { Owned = {}, Rolls = 0 }
+		return { Owned = {}, Rolls = 0, Deck = {}, Level = 1 }
 	end
-	return { Owned = table.clone(state.Data.Owned), Rolls = state.Data.Rolls }
+	local data = state.Data
+	return { Owned = table.clone(data.Owned), Rolls = data.Rolls, Deck = table.clone(data.Deck), Level = data.Level }
 end
 
 function ProgressService.Init()
 	Net.Function("Inventory").OnServerInvoke = inventory
+	Net.Function("SetDeck").OnServerInvoke = setDeck
 	Players.PlayerAdded:Connect(setup)
 	Players.PlayerRemoving:Connect(function(player: Player)
 		local state = progress[player]

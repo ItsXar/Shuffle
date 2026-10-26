@@ -20,10 +20,13 @@ export type Result = {
 	UntilLucky: number, -- rolls left until the next lucky roll (1 = the next one)
 }
 
--- What the server answers to "Inventory": how many of each card the player owns.
+-- What the server answers to "Inventory": how many of each card the player owns, the deck that
+-- fights (card ids, at most Config/Battle > DeckSize) and the monster level reached.
 export type Collection = {
 	Owned: { [string]: number },
 	Rolls: number,
+	Deck: { string },
+	Level: number,
 }
 
 local Odds = {}

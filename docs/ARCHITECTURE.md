@@ -30,7 +30,9 @@ src/
 │  ├─ Boot.server.luau              Net.Setup + Loader
 │  └─ Services/
 │     ├─ Roll/RollService           remote "Roll": cooldown, szczęście, losowanie ręki, wybór najlepszej
-│     └─ Progress/ProgressService   rolle, kolekcja, leaderstats, remote "Inventory"; zapis przez Store (DataStore)
+│     ├─ Progress/ProgressService   rolle, kolekcja, deck, poziom, leaderstats, remoty "Inventory"
+│     │                             i "SetDeck"; zapis przez Store (DataStore)
+│     └─ Battle/BattleService       walka: co tick każda karta decku bije potwora; śmierć = poziom wyżej
 │
 ├─ StarterPlayer/StarterPlayerScripts/Boot.client.luau    Loader
 │
@@ -38,22 +40,30 @@ src/
    ├─ Shared/
    │  ├─ Core/      Loader, Log, Seal
    │  ├─ Net/       init (właściciel remotów), Remotes (jedyna lista remotów)
-   │  ├─ Config/    Rarities, Cards, CardArt (ID obrazków kart), Roll, Theme, Sounds, Input
-   │  ├─ Domain/    Catalog (wyszukiwanie kart/rzadkości), Odds (zasady losowania, typ Result)
+   │  ├─ Config/    Rarities (+ Power), Cards, CardArt (ID obrazków kart), Battle (potwory, HP),
+   │  │             Roll, Theme, Sounds, Input
+   │  ├─ Domain/    Catalog (wyszukiwanie kart/rzadkości), Odds (zasady losowania, typ Result),
+   │  │             Power (siła kart, HP potworów, BattleEvent), Deck (zasady decku)
    │  └─ Util/      Scope
    └─ Client/
       ├─ Controllers/RollController     pętla: przycisk/klawisz -> serwer -> Stage -> plecak, auto-roll
-      ├─ Controllers/BackpackController kolekcja klienta, nowe karty (licznik), okno plecaka
+      ├─ Controllers/BackpackController kolekcja i deck klienta, nowe karty (licznik), okno plecaka
+      ├─ Controllers/BattleController   potwór w świecie, pasek HP, strzały z kart, liczby obrażeń
+      ├─ Controllers/HudController      właściciel dolnego paska (deck + przyciski)
+      ├─ World/                         Monsters/ (Rig + Slime, Golem, Demon), Arena, HealthBar,
+      │                                 DamageText
       ├─ Core/Audio                     dźwięki z Config/Sounds (na razie wyłączone: Sounds > Enabled)
       └─ UI/
          ├─ Root, Fit, Make, Motion, Paint    warstwy ScreenGui, skalowanie, budowanie, tweeny, kolory
          ├─ Components/  Card/ (init, Art = karty z obrazków, Front/Back = zastępcze z ramek, Kit),
          │               MiniCard (karta w liście), Button
-         ├─ Fx/          Flash, Shake, Zoom, Burst, Ring, Aura, Flood, Converge, Confetti, Rays, Banner
+         ├─ Fx/          Flash, Shake, Zoom, Burst, Ring, Aura, Flood, Converge, Confetti, Rays, Banner,
+         │               Bolt (strzał karty w potwora)
          └─ Screens/
             ├─ Stage/    init, Show, Deal, Reels, Pick, Celebrate  karty u góry ekranu
             ├─ Hud/      init, Badge                               BACKPACK + AUTO ROLL + ROLL na dole
-            └─ Backpack/ init, Header, Tile                        okno kolekcji
+            ├─ DeckBar/  init                                      5 kart decku nad przyciskami
+            └─ Backpack/ init, Parts, DeckRow, Collection          okno: deck + kolekcja
 ```
 
 Poza `src/`: `assets/cards/` (PNG kart do wgrania), `tools/cardart/` (projekt kart w HTML/CSS +
@@ -66,7 +76,9 @@ Poza `src/`: `assets/cards/` (PNG kart do wgrania), `tools/cardart/` (projekt ka
 | Remoty | `Shared/Net` |
 | Losowanie i wynik rolla | `RollService` |
 | Postęp gracza (zapis), leaderstats | `ProgressService` (+ `Store`) |
-| Kolekcja po stronie klienta, okno plecaka | `BackpackController` |
+| Kolekcja i deck po stronie klienta, okno plecaka | `BackpackController` |
+| Walka (HP potwora, obrażenia, poziom) | `BattleService` (klient tylko odtwarza: `BattleController`) |
+| Dolny pasek | `HudController` |
 | Czy trwa roll, auto-roll, klawisze | `RollController` |
 | Karty na ekranie i ich pokaz | `Screens/Stage` |
 | Przyciski na dole | `Screens/Hud` |

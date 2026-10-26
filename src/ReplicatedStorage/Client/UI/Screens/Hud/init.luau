@@ -1,9 +1,9 @@
 --!strict
 --[[
-	The buttons at the bottom of the screen: BACKPACK (with a red badge counting cards found since
-	it was last opened; won cards fly into it), AUTO ROLL (toggle) and ROLL (breathes while idle,
-	punches when a roll starts; rolled cards fly out of it).
-	Shows state only: every press goes to the actions given by the owner (RollController).
+	The bottom of the screen: room for the deck bar on top (Canvas), and under it the buttons:
+	BACKPACK (red badge counting cards found since it was last opened; won cards fly into it),
+	AUTO ROLL (toggle) and ROLL (breathes while idle, punches when a roll starts; rolled cards fly
+	out of it). Shows state only: presses call Actions, which the controllers fill in.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,6 +19,7 @@ local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 
 local BREATH = 0.03
 local BREATH_SPEED = 3.5
+local BUTTONS_Y = 150
 
 export type Actions = {
 	OnRoll: () -> (),
@@ -27,6 +28,8 @@ export type Actions = {
 }
 
 export type Hud = {
+	Canvas: Frame,
+	Actions: Actions,
 	SetBusy: (self: Hud, busy: boolean) -> (),
 	SetAuto: (self: Hud, on: boolean) -> (),
 	SetBadge: (self: Hud, count: number) -> (),
@@ -39,7 +42,7 @@ export type Hud = {
 
 local Hud = {}
 
-function Hud.new(actions: Actions): Hud
+function Hud.new(): Hud
 	local design = Theme.Hud.Design
 	local colors = Theme.Colors
 	local canvas: Frame = Make("Frame", {
@@ -52,31 +55,42 @@ function Hud.new(actions: Actions): Hud
 	})
 	Fit.Attach(canvas, design, Theme.Hud.HeightShare)
 
+	local actions: Actions = {
+		OnRoll = function() end,
+		OnAuto = function() end,
+		OnBackpack = function() end,
+	}
 	local backpack = Button.new({
 		Parent = canvas,
-		Position = UDim2.fromOffset(43, 40),
+		Position = UDim2.fromOffset(43, BUTTONS_Y),
 		Size = UDim2.fromOffset(66, 58),
 		Color = colors.Backpack,
 		Text = "BACKPACK",
 		Icon = "🎒",
-		OnClick = actions.OnBackpack,
+		OnClick = function()
+			actions.OnBackpack()
+		end,
 	})
 	local badge = Badge(backpack.Root)
 	local auto = Button.new({
 		Parent = canvas,
-		Position = UDim2.fromOffset(163, 40),
+		Position = UDim2.fromOffset(163, BUTTONS_Y),
 		Size = UDim2.fromOffset(150, 54),
 		Color = colors.AutoOff,
 		Text = "AUTO ROLL",
-		OnClick = actions.OnAuto,
+		OnClick = function()
+			actions.OnAuto()
+		end,
 	})
 	local roll = Button.new({
 		Parent = canvas,
-		Position = UDim2.fromOffset(350, 38),
+		Position = UDim2.fromOffset(350, BUTTONS_Y - 2),
 		Size = UDim2.fromOffset(200, 62),
 		Color = colors.Roll,
 		Text = "ROLL",
-		OnClick = actions.OnRoll,
+		OnClick = function()
+			actions.OnRoll()
+		end,
 	})
 
 	local busy = false
@@ -86,7 +100,7 @@ function Hud.new(actions: Actions): Hud
 		end
 	end)
 
-	local self = {} :: Hud
+	local self = { Canvas = canvas, Actions = actions } :: Hud
 
 	function self.SetBusy(_: Hud, value: boolean)
 		busy = value

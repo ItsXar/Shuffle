@@ -1,7 +1,8 @@
 # Shuffle
 
 Gra Roblox typu „roll”: klikasz **ROLL**, u góry ekranu losują się **3 karty**, a system sam wybiera
-najlepszą i ją zachowuje. Każda rzadkość ma swój pokaz: od małego błysku po zaciemnienie ekranu,
+najlepszą i ją zachowuje. Z kart składasz **deck (5 kart)**, który sam walczy z potworem przed tobą —
+każdy pokonany potwór to poziom wyżej i silniejszy przeciwnik. Każda rzadkość ma swój pokaz: od małego błysku po zaciemnienie ekranu,
 fale uderzeniowe, wybuch iskier, promienie, świecące krawędzie ekranu, trzęsienie kamery i napis.
 
 Kod jest zarządzany przez [Rojo](https://rojo.space): edytujesz pliki w `src/`, a Rojo na bieżąco
@@ -54,6 +55,8 @@ Dopóki ID są puste, gra rysuje zastępcze karty z ramek. Grafiki rysuje `tools
 | Karty (nazwa, rzadkość, ikona) | `src/ReplicatedStorage/Shared/Config/Cards.luau` |
 | ID grafik kart | `src/ReplicatedStorage/Shared/Config/CardArt.luau` |
 | Kart na losowanie, lucky roll, cooldown | `src/ReplicatedStorage/Shared/Config/Roll.luau` |
+| Potwory, HP, tempo walki, siła kopii | `src/ReplicatedStorage/Shared/Config/Battle.luau` |
+| Siła kart (obrażenia) | `Power` w `src/ReplicatedStorage/Shared/Config/Rarities.luau` |
 | Kolory UI, rozmiary, czcionki | `src/ReplicatedStorage/Shared/Config/Theme.luau` |
 | Dźwięki (na razie wyłączone, `Enabled = false`) | `src/ReplicatedStorage/Shared/Config/Sounds.luau` |
 | Klawisze | `src/ReplicatedStorage/Shared/Config/Input.luau` |

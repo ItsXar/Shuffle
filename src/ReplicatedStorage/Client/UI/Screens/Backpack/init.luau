@@ -1,60 +1,105 @@
 --!strict
 --[[
-	The backpack window: every card in the game, found ones with their count, missing ones dark
-	with "?", and the collection progress on top. Opens over a blurred world with the tiles
-	popping in one after another; the dark backdrop or the ✕ closes it.
+	The backpack window: the deck on top (DeckRow) and every card in the game below
+	(Collection), with the collection progress in the title bar. Opens over a blurred world with
+	the tiles popping in; the dark backdrop or ✕ closes it. Shows state only: every click goes to
+	the actions given by the owner (BackpackController), which answers with Render.
 ]]
 
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Catalog = require(ReplicatedStorage.Shared.Domain.Catalog)
+local Collection = require(script.Collection)
+local DeckRow = require(script.DeckRow)
 local Fit = require(script.Parent.Parent.Fit)
-local Header = require(script.Header)
 local Make = require(script.Parent.Parent.Make)
 local Motion = require(script.Parent.Parent.Motion)
+local Parts = require(script.Parts)
 local Root = require(script.Parent.Parent.Root)
 local Theme = require(ReplicatedStorage.Shared.Config.Theme)
-local Tile = require(script.Tile)
 
 local BLUR = 14
-local BACKDROP = 0.4
+local BACKDROP = 0.35
 local OPEN_SECONDS = 0.3
-local TILE_STAGGER = 0.015
+local DECK_Y = 64
+local CARDS_Y = 268
+
+export type State = Collection.State
+
+export type Actions = {
+	OnClose: () -> (),
+	OnCard: (cardId: string) -> (),
+	OnSlot: (index: number) -> (),
+	OnEquipBest: () -> (),
+}
 
 export type Backpack = {
-	Open: (self: Backpack, owned: { [string]: number }, fresh: { [string]: boolean }) -> (),
+	Open: (self: Backpack, state: State) -> (),
+	Render: (self: Backpack, state: State) -> (),
 	Close: (self: Backpack) -> (),
 	IsOpen: (self: Backpack) -> boolean,
 }
 
 local Backpack = {}
 
-local function grid(panel: Frame): ScrollingFrame
-	local cell = Theme.Backpack.Cell
-	return Make("ScrollingFrame", {
-		Name = "Grid",
-		Position = UDim2.fromOffset(24, 92),
-		Size = UDim2.new(1, -48, 1, -108),
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		ScrollBarThickness = 6,
-		ScrollBarImageColor3 = Theme.Colors.PanelEdge,
-		AutomaticCanvasSize = Enum.AutomaticSize.Y,
-		CanvasSize = UDim2.new(),
-		ScrollingDirection = Enum.ScrollingDirection.Y,
-		Parent = panel,
-	}, {
-		Make("UIGridLayout", {
-			CellSize = UDim2.fromOffset(cell.X, cell.Y),
-			CellPadding = UDim2.fromOffset(12, 14),
-			SortOrder = Enum.SortOrder.LayoutOrder,
-		}),
-		Make("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingLeft = UDim.new(0, 6), PaddingBottom = UDim.new(0, 8) }),
+local function titleBar(window: Frame, onClose: () -> ()): (TextLabel, Frame)
+	local colors = Theme.Colors
+	Parts.Label(window, {
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.fromOffset(26, 34),
+		Size = UDim2.fromOffset(300, 28),
+		Text = "BACKPACK",
+		TextXAlignment = Enum.TextXAlignment.Left,
 	})
+	local count = Parts.Label(window, {
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -82, 0, 26),
+		Size = UDim2.fromOffset(200, 14),
+		Text = "",
+		TextColor3 = colors.Muted,
+		TextXAlignment = Enum.TextXAlignment.Right,
+	})
+	local track: Frame = Make("Frame", {
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -82, 0, 44),
+		Size = UDim2.fromOffset(200, 8),
+		BackgroundColor3 = colors.Ink,
+		Parent = window,
+	}, {
+		Make("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	})
+	local fill: Frame = Make("Frame", {
+		Size = UDim2.fromScale(0, 1),
+		BackgroundColor3 = colors.Gold,
+		Parent = track,
+	}, {
+		Make("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	})
+	local close: TextButton = Make("TextButton", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -38, 0, 34),
+		Size = UDim2.fromOffset(38, 38),
+		BackgroundColor3 = colors.Section,
+		AutoButtonColor = false,
+		Text = "",
+		Parent = window,
+	}, {
+		Make("UICorner", { CornerRadius = UDim.new(0, 10) }),
+		Make("UIStroke", { Thickness = 1, Color = colors.Edge }),
+	})
+	Parts.Label(close, {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromScale(0.45, 0.45),
+		Text = "✕",
+		TextColor3 = colors.Muted,
+	})
+	close.Activated:Connect(onClose)
+	return count, fill
 end
 
-function Backpack.new(onClose: () -> ()): Backpack
+function Backpack.new(actions: Actions): Backpack
 	local colors = Theme.Colors
 	local layer = Root.Layer("Menu")
 	local backdrop: TextButton = Make("TextButton", {
@@ -67,7 +112,10 @@ function Backpack.new(onClose: () -> ()): Backpack
 		Visible = false,
 		Parent = layer,
 	})
+	backdrop.Activated:Connect(actions.OnClose)
+
 	local design = Theme.Backpack.Design
+	-- Canvas carries Fit's UIScale; the panel inside carries the open/close pop.
 	local canvas: Frame = Make("Frame", {
 		Name = "Window",
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -79,55 +127,67 @@ function Backpack.new(onClose: () -> ()): Backpack
 		Parent = layer,
 	})
 	Fit.Attach(canvas, design, Theme.Backpack.HeightShare)
-	local panel: Frame = Make("Frame", {
+	local window: Frame = Make("Frame", {
 		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundColor3 = colors.Panel,
 		Parent = canvas,
 	}, {
-		Make("UICorner", { CornerRadius = UDim.new(0, 26) }),
-		Make("UIStroke", { Thickness = 3, Color = colors.PanelEdge }),
-		Make("UIGradient", { Rotation = 90, Color = ColorSequence.new(colors.PanelTop, colors.PanelBottom) }),
+		Make("UICorner", { CornerRadius = UDim.new(0, 22) }),
+		Make("UIStroke", { Thickness = 2, Color = colors.Edge }),
 	})
-	local pop: UIScale = Make("UIScale", { Parent = panel })
-	local header = Header.new(panel, onClose)
-	local list = grid(panel)
-	local blur: BlurEffect = Make("BlurEffect", { Size = 0, Enabled = false, Parent = Lighting })
+	local pop: UIScale = Make("UIScale", { Parent = window })
+	local count, fill = titleBar(window, actions.OnClose)
+	local deckRow = DeckRow.new(window, DECK_Y, { OnSlot = actions.OnSlot, OnEquipBest = actions.OnEquipBest })
 
-	backdrop.Activated:Connect(onClose)
+	local cardsBox = Parts.Section(window, CARDS_Y, design.Y - CARDS_Y - 20, "CARDS")
+	local list: ScrollingFrame = Make("ScrollingFrame", {
+		Position = UDim2.fromOffset(12, 40),
+		Size = UDim2.new(1, -24, 1, -48),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 5,
+		ScrollBarImageColor3 = colors.Edge,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		Parent = cardsBox,
+	})
+	local collection = Collection.new(list, actions.OnCard)
+	local blur: BlurEffect = Make("BlurEffect", { Size = 0, Enabled = false, Parent = Lighting })
 
 	local open = false
 	local self = {} :: Backpack
 
-	function self.Open(_: Backpack, owned: { [string]: number }, fresh: { [string]: boolean })
-		for _, child in list:GetChildren() do
-			if child:IsA("Frame") then
-				child:Destroy()
-			end
-		end
-		local cards = Catalog.All()
+	local function render(state: State, animate: boolean)
+		local total = #Catalog.All()
 		local have = 0
-		for order, card in cards do
-			local count = owned[card.Id] or 0
-			if count > 0 then
+		for _, card in Catalog.All() do
+			if (state.Owned[card.Id] or 0) > 0 then
 				have += 1
 			end
-			local tile = Tile.new(list, card.Id, count, fresh[card.Id] == true, order)
-			local scale = tile:FindFirstChildOfClass("UIScale") :: UIScale
-			scale.Scale = 0
-			task.delay(order * TILE_STAGGER, function()
-				Motion.Tween(scale, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
-			end)
 		end
-		header:SetProgress(have, #cards)
-		list.CanvasPosition = Vector2.zero
+		count.Text = `COLLECTION {have}/{total}`
+		Motion.Tween(fill, 0.4, { Size = UDim2.fromScale(have / math.max(total, 1), 1) })
+		deckRow:Render(state.Deck, state.Owned)
+		collection:Render(state, animate)
+	end
 
+	function self.Open(_: Backpack, state: State)
+		render(state, true)
+		list.CanvasPosition = Vector2.zero
 		open = true
 		backdrop.Visible = true
 		canvas.Visible = true
 		blur.Enabled = true
 		Motion.Tween(backdrop, OPEN_SECONDS, { BackgroundTransparency = BACKDROP })
 		Motion.Tween(blur, OPEN_SECONDS, { Size = BLUR })
-		Motion.Pop(pop, 0.85, 1, OPEN_SECONDS + 0.1)
+		Motion.Pop(pop, 0.88, 1, OPEN_SECONDS + 0.1)
+	end
+
+	function self.Render(_: Backpack, state: State)
+		if open then
+			render(state, false)
+		end
 	end
 
 	function self.Close(_: Backpack)
@@ -137,7 +197,7 @@ function Backpack.new(onClose: () -> ()): Backpack
 		open = false
 		Motion.Tween(backdrop, 0.2, { BackgroundTransparency = 1 })
 		Motion.Tween(blur, 0.2, { Size = 0 })
-		Motion.Tween(pop, 0.2, { Scale = 0.85 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In).Completed:Once(function()
+		Motion.Tween(pop, 0.2, { Scale = 0.88 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In).Completed:Once(function()
 			if not open then
 				backdrop.Visible = false
 				canvas.Visible = false

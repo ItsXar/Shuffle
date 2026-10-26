@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Audio = require(script.Parent.Parent.Core.Audio)
 local BackpackController = require(script.Parent.BackpackController)
 local Hud = require(script.Parent.Parent.UI.Screens.Hud)
+local HudController = require(script.Parent.HudController)
 local Input = require(ReplicatedStorage.Shared.Config.Input)
 local Log = require(ReplicatedStorage.Shared.Core.Log)
 local Net = require(ReplicatedStorage.Shared.Net)
@@ -91,14 +92,11 @@ function RollController.Start()
 	remote = Net.Function("Roll")
 	Audio.Preload()
 	stage = Stage.new()
-	hud = Hud.new({
-		OnRoll = RollController.Roll,
-		OnAuto = function()
-			RollController.SetAuto(not auto)
-		end,
-		OnBackpack = BackpackController.Toggle,
-	})
-	BackpackController.Attach(hud)
+	hud = HudController.Get()
+	hud.Actions.OnRoll = RollController.Roll
+	hud.Actions.OnAuto = function()
+		RollController.SetAuto(not auto)
+	end
 	bind("ShuffleRoll", Input.Roll, RollController.Roll)
 	bind("ShuffleAuto", Input.Auto, function()
 		RollController.SetAuto(not auto)

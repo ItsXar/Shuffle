@@ -11,6 +11,10 @@ local Remotes: { [string]: Spec } = {
 	Roll = { Kind = "Function" },
 	-- Client asks for its collection (Shared/Domain/Odds > Collection) once, when it starts.
 	Inventory = { Kind = "Function" },
+	-- Client asks to change its deck (card ids); the server answers with the deck it kept.
+	SetDeck = { Kind = "Function" },
+	-- Server -> client: the battle (Shared/Domain/Power > BattleEvent): a monster spawns, hits land.
+	Battle = { Kind = "Event" },
 }
 
 return table.freeze(Remotes)

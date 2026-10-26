@@ -3,12 +3,14 @@
 	Every rarity, from the most common to the rarest. The position in this list is the tier:
 	a higher tier always beats a lower one when the system picks the best card of a roll.
 
-	Chance = "1 in N" for one card (Domain/Odds). Fx = how hard the show celebrates this rarity:
-	  Shake, Flash   0..1 strength          Sparks    particles in the burst
-	  Suspense       seconds the reel teases before locking a card of this rarity
+	Chance = "1 in N" for one card (Domain/Odds). Power = damage a card of this rarity deals per
+	hit in battle (Domain/Power). Fx = how hard the roll show celebrates this rarity:
+	  Shake, Flash   0..1 strength          Sparks     particles in the burst
+	  Suspense       seconds the closed card spends climbing the rarities up to this one
 	  Hold           seconds the winner stays on screen before it is collected
-	  Banner, Rays, Blackout   the big announcement, sunburst behind the card, screen goes dark first
-	Effect = card finish: "None", "Shine" (light sweep) or "Rainbow" (shine + rainbow border).
+	  Rays           sunburst, rising motes        Banner     colour flood + big title
+	  Blackout       dark build-up, light pouring into the card     Confetti   confetti rain
+	Effect = card finish: "None", "Shine" (light sweep) or "Rainbow" (shine + rainbow rim).
 ]]
 
 local Seal = require(script.Parent.Parent.Core.Seal)
@@ -33,6 +35,7 @@ export type Rarity = {
 	Chance: number,
 	Color: Color3,
 	Dark: Color3,
+	Power: number,
 	Effect: Effect,
 	Fx: Fx,
 }
@@ -45,6 +48,7 @@ local Rarities: { Rarity } = {
 		Chance = 1.5,
 		Color = Color3.fromRGB(205, 211, 222),
 		Dark = Color3.fromRGB(78, 84, 99),
+		Power = 1,
 		Effect = "None",
 		Fx = {
 			Shake = 0,
@@ -64,6 +68,7 @@ local Rarities: { Rarity } = {
 		Chance = 4,
 		Color = Color3.fromRGB(94, 232, 128),
 		Dark = Color3.fromRGB(22, 96, 50),
+		Power = 3,
 		Effect = "None",
 		Fx = {
 			Shake = 0.08,
@@ -83,6 +88,7 @@ local Rarities: { Rarity } = {
 		Chance = 12,
 		Color = Color3.fromRGB(64, 170, 255),
 		Dark = Color3.fromRGB(16, 58, 128),
+		Power = 8,
 		Effect = "Shine",
 		Fx = {
 			Shake = 0.18,
@@ -102,6 +108,7 @@ local Rarities: { Rarity } = {
 		Chance = 40,
 		Color = Color3.fromRGB(184, 98, 255),
 		Dark = Color3.fromRGB(64, 22, 124),
+		Power = 20,
 		Effect = "Shine",
 		Fx = {
 			Shake = 0.32,
@@ -121,6 +128,7 @@ local Rarities: { Rarity } = {
 		Chance = 150,
 		Color = Color3.fromRGB(255, 198, 58),
 		Dark = Color3.fromRGB(138, 78, 8),
+		Power = 55,
 		Effect = "Shine",
 		Fx = {
 			Shake = 0.5,
@@ -140,6 +148,7 @@ local Rarities: { Rarity } = {
 		Chance = 600,
 		Color = Color3.fromRGB(255, 64, 128),
 		Dark = Color3.fromRGB(118, 8, 50),
+		Power = 150,
 		Effect = "Shine",
 		Fx = {
 			Shake = 0.65,
@@ -159,6 +168,7 @@ local Rarities: { Rarity } = {
 		Chance = 2500,
 		Color = Color3.fromRGB(130, 248, 255),
 		Dark = Color3.fromRGB(14, 104, 136),
+		Power = 420,
 		Effect = "Rainbow",
 		Fx = {
 			Shake = 0.8,
@@ -178,6 +188,7 @@ local Rarities: { Rarity } = {
 		Chance = 10000,
 		Color = Color3.fromRGB(132, 102, 255),
 		Dark = Color3.fromRGB(18, 10, 66),
+		Power = 1200,
 		Effect = "Rainbow",
 		Fx = {
 			Shake = 0.9,
@@ -197,6 +208,7 @@ local Rarities: { Rarity } = {
 		Chance = 100000,
 		Color = Color3.fromRGB(255, 255, 255),
 		Dark = Color3.fromRGB(12, 10, 18),
+		Power = 4000,
 		Effect = "Rainbow",
 		Fx = {
 			Shake = 1,

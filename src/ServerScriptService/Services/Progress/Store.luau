@@ -17,6 +17,8 @@ local RETRIES = 3
 export type Data = {
 	Rolls: number,
 	Owned: { [string]: number },
+	Deck: { string },
+	Level: number,
 }
 
 local Store = {}
