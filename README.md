@@ -1,7 +1,15 @@
 # Shuffle
 
-Gra Roblox. Kod jest zarządzany przez [Rojo](https://rojo.space) — edytujesz pliki w `src/`,
-a Rojo na bieżąco synchronizuje je do Roblox Studio.
+Gra Roblox typu „roll”: klikasz **ROLL**, u góry ekranu losują się **3 karty**, a system sam wybiera
+najlepszą i ją zachowuje. Każda rzadkość ma swój pokaz: od małego błysku po zaciemnienie ekranu,
+wybuch iskier, promienie, trzęsienie kamery i wielki napis.
+
+Kod jest zarządzany przez [Rojo](https://rojo.space): edytujesz pliki w `src/`, a Rojo na bieżąco
+synchronizuje je do Roblox Studio.
+
+| Dokument | Po co |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Jak gra jest zbudowana, kto za co odpowiada, zasady pisania kodu |
 
 ## Jednorazowa konfiguracja
 
@@ -9,12 +17,8 @@ a Rojo na bieżąco synchronizuje je do Roblox Studio.
    ```bash
    rokit install          # instaluje przypięte wersje: rojo, stylua, selene, luau-lsp
    ```
-2. Zainstaluj plugin Rojo w Studio:
-   ```bash
-   rojo plugin install
-   ```
-   (albo z Creator Store: „Rojo”). Wersja pluginu musi pasować do `rojo` z `rokit.toml` (7.4.x).
-3. VS Code: zainstaluj polecane rozszerzenia (`.vscode/extensions.json`) — luau-lsp, StyLua, selene, Rojo.
+2. Zainstaluj plugin Rojo w Studio: `rojo plugin install` (wersja 7.4.x, taka jak w `rokit.toml`).
+3. VS Code: zainstaluj polecane rozszerzenia (`.vscode/extensions.json`).
 
 ## Praca
 
@@ -22,28 +26,23 @@ a Rojo na bieżąco synchronizuje je do Roblox Studio.
 rojo serve               # start serwera Rojo (port 34872)
 ```
 
-1. Otwórz w Roblox Studio dowolne miejsce (np. pusty Baseplate albo `build/Shuffle.rbxl`).
-2. Zakładka **Plugins → Rojo → Connect**. Od teraz kod edytujesz tylko w `src/`.
-3. Jeśli gra używa DataStore / HTTP: *Game Settings → Security → Enable Studio Access to API Services*.
-
-Zbudowanie pliku gry bez Studio:
+1. Otwórz w Roblox Studio pusty **Baseplate** (albo `build/Shuffle.rbxl`).
+2. **Plugins → Rojo → Connect**, potem **Play**.
+3. **ROLL** (albo klawisz `R`) losuje, **AUTO** (`T`) losuje w kółko.
 
 ```bash
-rojo build -o build/Shuffle.rbxl
-./scripts/check.sh       # format + lint + build — to samo, co CI
+./scripts/check.sh       # format + lint + typy + zasady architektury + build — to samo, co CI
 ```
 
-## Struktura
+## Strojenie gry (bez dotykania logiki)
 
-```
-src/
-  ReplicatedFirst/                         pierwsze skrypty klienta (ekran ładowania)
-  ReplicatedStorage/Shared/                kod wspólny klient + serwer (Config.luau)
-  ServerScriptService/Main.server.luau     start serwera
-  StarterPlayer/StarterPlayerScripts/
-    Main.client.luau                       start klienta
-default.project.json                       mapowanie folderów na drzewo gry (Rojo)
-```
+| Co | Gdzie |
+|---|---|
+| Rzadkości, szanse „1 in N”, kolory, siła efektów | `src/ReplicatedStorage/Shared/Config/Rarities.luau` |
+| Karty (nazwa, rzadkość, ikona) | `src/ReplicatedStorage/Shared/Config/Cards.luau` |
+| Kart na losowanie, lucky roll, cooldown | `src/ReplicatedStorage/Shared/Config/Roll.luau` |
+| Kolory UI, rozmiary, czcionki | `src/ReplicatedStorage/Shared/Config/Theme.luau` |
+| Dźwięki | `src/ReplicatedStorage/Shared/Config/Sounds.luau` |
+| Klawisze | `src/ReplicatedStorage/Shared/Config/Input.luau` |
 
-Nazwy plików: `*.server.luau` = Script, `*.client.luau` = LocalScript, `*.luau` = ModuleScript,
-folder z `init.luau` = ModuleScript z dziećmi.
+Postęp (liczba rolli, najlepsza karta) trwa na razie tylko do wyjścia z serwera — zapisu jeszcze nie ma.

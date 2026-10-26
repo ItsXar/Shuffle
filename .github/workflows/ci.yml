@@ -17,9 +17,10 @@ jobs:
           curl -sSL -o rojo.zip https://github.com/rojo-rbx/rojo/releases/download/v7.4.4/rojo-7.4.4-linux-x86_64.zip
           curl -sSL -o stylua.zip https://github.com/JohnnyMorganz/StyLua/releases/download/v0.20.0/stylua-linux-x86_64.zip
           curl -sSL -o selene.zip https://github.com/Kampfkarren/selene/releases/download/0.27.1/selene-0.27.1-linux.zip
+          curl -sSL -o luau-lsp.zip https://github.com/JohnnyMorganz/luau-lsp/releases/download/1.60.0/luau-lsp-linux-x86_64.zip
           for f in *.zip; do unzip -o -q "$f"; done
-          chmod +x rojo stylua selene
+          chmod +x rojo stylua selene luau-lsp
           echo "$HOME/tools" >> "$GITHUB_PATH"
 
-      - name: Format, lint, build
+      - name: Format, lint, types, guard, build
         run: ./scripts/check.sh
