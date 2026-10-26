@@ -112,7 +112,9 @@ function Shuffle.Run(show: Show.Show)
 	local spinning = #show.Cards
 	for index in show.Cards do
 		show.Scope:Spawn(function()
-			local ok, err = pcall(spin, show, index)
+			local ok, err = pcall(function()
+				spin(show, index)
+			end)
 			if not ok then
 				Log.Warn(TAG, err)
 			end

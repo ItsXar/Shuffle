@@ -40,7 +40,8 @@ local Rarities: { Rarity } = {
 	{
 		Id = "Common",
 		Name = "Common",
-		Chance = 1,
+		-- Tier 1 is what is left when no other tier hits, so this is only shown on the card.
+		Chance = 1.5,
 		Color = Color3.fromRGB(205, 211, 222),
 		Dark = Color3.fromRGB(78, 84, 99),
 		Effect = "None",

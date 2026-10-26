@@ -51,7 +51,9 @@ end
 local function run()
 	busy = true
 	hud:SetBusy(true)
-	local ok, err = pcall(loop)
+	local ok, err = pcall(function()
+		loop()
+	end)
 	if not ok then
 		Log.Warn(TAG, err)
 	end
