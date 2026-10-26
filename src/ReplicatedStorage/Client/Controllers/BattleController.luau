@@ -101,16 +101,18 @@ local function hits(list: { number }, killed: boolean, finalHp: number)
 			if not from or current ~= target then
 				return
 			end
-			Bolt.Fly(from, function()
+			local function aim(): Vector2
 				return headOnScreen(target)
-			end, color, FLIGHT, function(at: Vector2)
+			end
+			local function onHit(at: Vector2)
 				land(target, damage, last and killed, at)
 				if last and not killed and current == target then
 					-- Settle on the server's number in case a hit was missed.
 					target.Hp = finalHp
 					target.Bar:Set(finalHp, target.MaxHp)
 				end
-			end)
+			end
+			Bolt.Fly(from, aim, color, FLIGHT, onHit)
 		end)
 	end
 end
