@@ -37,7 +37,7 @@ export type Face = {
 
 local Kit = {}
 
-local function corner(radius: number): UICorner
+local function corner(radius: number): Instance
 	return Make("UICorner", { CornerRadius = UDim.new(0, radius) })
 end
 
