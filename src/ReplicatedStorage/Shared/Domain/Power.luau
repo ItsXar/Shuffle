@@ -18,6 +18,13 @@ export type BattleEvent = {
 	Killed: boolean?,
 }
 
+local UNITS: { { Size: number, Suffix: string } } = {
+	{ Size = 1e12, Suffix = "T" },
+	{ Size = 1e9, Suffix = "B" },
+	{ Size = 1e6, Suffix = "M" },
+	{ Size = 1e3, Suffix = "K" },
+}
+
 local Power = {}
 
 function Power.Card(cardId: string, copies: number): number
@@ -66,11 +73,10 @@ end
 
 -- 1234 -> "1.2K", 3400000 -> "3.4M".
 function Power.Format(value: number): string
-	local units = { { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }
-	for _, unit in units do
-		if value >= unit[1] then
-			local text = string.gsub(string.format("%.1f", value / unit[1]), "%.0$", "")
-			return text .. unit[2]
+	for _, unit in UNITS do
+		if value >= unit.Size then
+			local text = string.gsub(string.format("%.1f", value / unit.Size), "%.0$", "")
+			return text .. unit.Suffix
 		end
 	end
 	return tostring(math.floor(value))

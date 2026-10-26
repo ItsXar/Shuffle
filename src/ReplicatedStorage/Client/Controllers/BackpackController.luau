@@ -117,8 +117,9 @@ function BackpackController.Toggle()
 end
 
 function BackpackController.Start()
-	hud = HudController.Get()
-	hud.Actions.OnBackpack = BackpackController.Toggle
+	local bar = HudController.Get()
+	bar.Actions.OnBackpack = BackpackController.Toggle
+	hud = bar
 	window = Backpack.new({
 		OnClose = function()
 			local current = window
